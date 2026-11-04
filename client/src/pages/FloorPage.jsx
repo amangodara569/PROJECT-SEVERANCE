@@ -4,6 +4,7 @@ import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import PostComposer from '../components/PostComposer';
 import PostCard from '../components/PostCard';
+import AsciiArt from '../components/AsciiArt';
 
 // FloorPage shows details for a specific company floor and its posts
 export default function FloorPage() {
@@ -124,8 +125,17 @@ export default function FloorPage() {
 
       {/* Posts */}
       {posts.length === 0 ? (
-        <div className="p-8 text-center border font-mono text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-          No posts in this floor yet. Be the first to share.
+        <div
+          className="p-8 text-center border font-mono text-xs flex flex-col items-center justify-center space-y-3"
+          style={{
+            borderColor: 'var(--border)',
+            color: 'var(--muted)',
+            backgroundColor: 'var(--surface)',
+            borderRadius: '2px'
+          }}
+        >
+          <AsciiArt piece="empty-cobweb-folder" size={12} still={true} tone="muted" />
+          <p>No posts in this floor yet. Be the first to share.</p>
         </div>
       ) : (
         <div className="space-y-3">

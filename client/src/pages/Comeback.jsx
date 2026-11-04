@@ -4,6 +4,7 @@ import JobCard from '../components/JobCard';
 import PostCard from '../components/PostCard';
 import PostComposer from '../components/PostComposer';
 import WaffleParty from '../components/WaffleParty';
+import AsciiArt from '../components/AsciiArt';
 
 // Comeback page: Jobs and Reintegrated recovery celebrations
 export default function Comeback() {
@@ -67,6 +68,24 @@ export default function Comeback() {
 
   return (
     <div className="space-y-4">
+      {/* Header Art & Intro */}
+      <div
+        className="p-4 border flex flex-col items-center text-center space-y-2"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderColor: 'var(--border)',
+          borderRadius: '2px'
+        }}
+      >
+        <AsciiArt piece="sunrise-horizon" size={12} still={true} tone="muted" />
+        <h1 className="font-mono text-sm uppercase font-bold tracking-widest" style={{ color: 'var(--text)' }}>
+          THE COMEBACK
+        </h1>
+        <p className="font-sans text-xs" style={{ color: 'var(--muted)' }}>
+          Job opportunities and reintegration celebrations for severed personnel.
+        </p>
+      </div>
+
       {showWaffle && <WaffleParty onContinue={() => setShowWaffle(false)} />}
 
       {/* Tabs Switcher */}
@@ -140,8 +159,17 @@ export default function Comeback() {
         <div className="font-mono text-xs" style={{ color: 'var(--muted)' }}>Loading...</div>
       ) : activeTab === 'jobs' ? (
         jobs.length === 0 ? (
-          <div className="p-8 text-center border font-mono text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-            No open jobs posted yet. Share one to help the severed.
+          <div
+            className="p-8 text-center border font-mono text-xs flex flex-col items-center justify-center space-y-3"
+            style={{
+              borderColor: 'var(--border)',
+              color: 'var(--muted)',
+              backgroundColor: 'var(--surface)',
+              borderRadius: '2px'
+            }}
+          >
+            <AsciiArt piece="empty-no-results" size={12} still={true} tone="muted" />
+            <p>No open jobs posted yet. Share one to help the severed.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -152,8 +180,17 @@ export default function Comeback() {
         )
       ) : (
         hiredPosts.length === 0 ? (
-          <div className="p-8 text-center border font-mono text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-            No reintegration stories yet. Recovery awaits.
+          <div
+            className="p-8 text-center border font-mono text-xs flex flex-col items-center justify-center space-y-3"
+            style={{
+              borderColor: 'var(--border)',
+              color: 'var(--muted)',
+              backgroundColor: 'var(--surface)',
+              borderRadius: '2px'
+            }}
+          >
+            <AsciiArt piece="empty-no-results" size={12} still={true} tone="muted" />
+            <p>No reintegration stories yet. Recovery awaits.</p>
           </div>
         ) : (
           <div className="space-y-3">

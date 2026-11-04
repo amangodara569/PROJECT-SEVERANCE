@@ -1,38 +1,64 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const Comment = require('../models/Comment');
-const Post = require('../models/Post');
-const User = require('../models/User');
+const store = require('../db/store');
+const { makeComment } = require('../models/Comment');
 const auth = require('../middleware/auth');
 const { checkContent } = require('../utils/checkPost');
+const { validateComment } = require('../utils/validate');
 
 const router = express.Router();
 
-// Helper to sanitize comment object and hide author if Innie mode
+// Helper to format comment object with strict privacy rules
 const sanitizeComment = (comment, currentUserId = null) => {
-  const obj = comment.toObject ? comment.toObject() : { ...comment };
-  const upCount = obj.upvotes?.length || 0;
-  const downCount = obj.downvotes?.length || 0;
-  obj.score = upCount - downCount;
+  const upCount = comment.upvotes?.length || 0;
+  const downCount = comment.downvotes?.length || 0;
+  const score = upCount - downCount;
 
+  let myVote = 0;
+  let isOwner = false;
   if (currentUserId) {
-    const isUp = obj.upvotes?.some((id) => id.toString() === currentUserId.toString());
-    const isDown = obj.downvotes?.some((id) => id.toString() === currentUserId.toString());
-    obj.userVote = isUp ? 1 : isDown ? -1 : 0;
-    obj.isOwner = obj.author?._id?.toString() === currentUserId.toString() || obj.author?.toString() === currentUserId.toString();
-  } else {
-    obj.userVote = 0;
-    obj.isOwner = false;
+    const uid = currentUserId.toString();
+    const isUp = (comment.upvotes || []).some((id) => id.toString() === uid);
+    const isDown = (comment.downvotes || []).some((id) => id.toString() === uid);
+    myVote = isUp ? 1 : isDown ? -1 : 0;
+    isOwner = comment.author && comment.author.toString() === uid;
   }
 
-  // Strict Privacy: Never send author details for Innie comments
-  if (obj.isInnie) {
-    delete obj.author;
+  let innieHandle = comment.innieHandle;
+  if (comment.isInnie && !innieHandle && comment.author) {
+    const a = store.findById('users', comment.author);
+    if (a) innieHandle = a.innieHandle;
   }
 
-  delete obj.upvotes;
-  delete obj.downvotes;
-  return obj;
+  const result = {
+    _id: comment._id,
+    post: comment.post,
+    parent: comment.parent,
+    body: comment.body,
+    isInnie: Boolean(comment.isInnie),
+    innieHandle: Boolean(comment.isInnie) ? (innieHandle || 'Innie-0000') : null,
+    reportCount: comment.reportCount || 0,
+    score,
+    myVote,
+    userVote: myVote,
+    isOwner,
+    createdAt: comment.createdAt
+  };
+
+  // Strict Privacy: Never return author (id, username, email) on Innie comments
+  if (!comment.isInnie && comment.author) {
+    const authorUser = store.findById('users', comment.author);
+    if (authorUser) {
+      result.author = {
+        _id: authorUser._id,
+        username: authorUser.username,
+        headline: authorUser.headline || '',
+        status: authorUser.status || 'Employed'
+      };
+    }
+  }
+
+  return result;
 };
 
 // Optional token extractor
@@ -47,15 +73,16 @@ const getUserIdFromHeader = (req) => {
   return null;
 };
 
-// GET /api/posts/:id/comments - List comments for a specific post
-router.get('/posts/:id/comments', async (req, res) => {
+// GET /api/posts/:id/comments - List comments for a post
+router.get('/posts/:id/comments', (req, res) => {
   try {
-    const comments = await Comment.find({ post: req.params.id, hidden: { $ne: true } })
-      .populate('author', 'username status headline')
-      .sort({ createdAt: 1 });
+    const comments = store.getAll('comments')
+      .filter((c) => c.post && c.post.toString() === req.params.id.toString() && !c.hidden);
 
     const currentUserId = getUserIdFromHeader(req);
-    const sanitized = comments.map((c) => sanitizeComment(c, currentUserId));
+    const sanitized = comments
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      .map((c) => sanitizeComment(c, currentUserId));
 
     res.json({ comments: sanitized });
   } catch (error) {
@@ -63,15 +90,14 @@ router.get('/posts/:id/comments', async (req, res) => {
   }
 });
 
-// POST /api/posts/:id/comments - Add a top-level comment or 1-level reply
-router.post('/posts/:id/comments', auth, async (req, res) => {
+// POST /api/posts/:id/comments - Add comment (top-level or 1-level reply)
+router.post('/posts/:id/comments', auth, (req, res) => {
   try {
     const { body, parentId, isInnie } = req.body;
-    if (!body?.trim()) {
-      return res.status(400).json({ error: 'Comment text is required' });
-    }
 
-    // Doxx check: Block phone numbers and emails
+    const validationErr = validateComment(body);
+    if (validationErr) return res.status(400).json({ error: validationErr });
+
     const contentCheck = checkContent(body);
     if (contentCheck.blocked) {
       return res.status(400).json({
@@ -80,33 +106,32 @@ router.post('/posts/:id/comments', auth, async (req, res) => {
       });
     }
 
-    const post = await Post.findById(req.params.id);
+    const post = store.findById('posts', req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
     let finalParentId = null;
-    // Enforce 1 level of replies: attach reply to the root parent comment
     if (parentId) {
-      const parentComment = await Comment.findById(parentId);
+      const parentComment = store.findById('comments', parentId);
       if (parentComment) {
         finalParentId = parentComment.parent ? parentComment.parent : parentComment._id;
       }
     }
 
-    const user = await User.findById(req.user.id);
-    const comment = await Comment.create({
+    const user = store.findById('users', req.user.id);
+    const commentObj = makeComment({
       post: post._id,
       parent: finalParentId,
       body: body.trim(),
       author: req.user.id,
       isInnie: Boolean(isInnie),
-      innieHandle: user.innieHandle
+      innieHandle: user ? user.innieHandle : ''
     });
 
-    // Increment post's comment count
-    post.commentCount = (post.commentCount || 0) + 1;
-    await post.save();
+    const comment = store.insert('comments', commentObj);
 
-    await comment.populate('author', 'username status headline');
+    // Increment post's comment count
+    const commentCount = (post.commentCount || 0) + 1;
+    store.update('posts', post._id, { commentCount });
 
     res.status(201).json({ comment: sanitizeComment(comment, req.user.id) });
   } catch (error) {
@@ -114,44 +139,41 @@ router.post('/posts/:id/comments', auth, async (req, res) => {
   }
 });
 
-// POST /api/comments/:id/vote - Upvote or downvote a comment
-router.post('/comments/:id/vote', auth, async (req, res) => {
+// POST /api/comments/:id/vote - Upvote or downvote comment
+router.post('/comments/:id/vote', auth, (req, res) => {
   try {
     const { value } = req.body; // 1 or -1
-    const comment = await Comment.findById(req.params.id);
+    const comment = store.findById('comments', req.params.id);
     if (!comment) return res.status(404).json({ error: 'Comment not found' });
 
-    const userId = req.user.id;
-    const isUp = comment.upvotes.some((id) => id.toString() === userId);
-    const isDown = comment.downvotes.some((id) => id.toString() === userId);
+    const userId = req.user.id.toString();
+    let upvotes = (comment.upvotes || []).map((id) => id.toString());
+    let downvotes = (comment.downvotes || []).map((id) => id.toString());
 
     if (value === 1) {
-      if (isUp) {
-        comment.upvotes = comment.upvotes.filter((id) => id.toString() !== userId);
+      if (upvotes.includes(userId)) {
+        upvotes = upvotes.filter((id) => id !== userId);
       } else {
-        comment.upvotes.push(userId);
-        comment.downvotes = comment.downvotes.filter((id) => id.toString() !== userId);
+        upvotes.push(userId);
+        downvotes = downvotes.filter((id) => id !== userId);
       }
     } else if (value === -1) {
-      if (isDown) {
-        comment.downvotes = comment.downvotes.filter((id) => id.toString() !== userId);
+      if (downvotes.includes(userId)) {
+        downvotes = downvotes.filter((id) => id !== userId);
       } else {
-        comment.downvotes.push(userId);
-        comment.upvotes = comment.upvotes.filter((id) => id.toString() !== userId);
+        downvotes.push(userId);
+        upvotes = upvotes.filter((id) => id !== userId);
       }
     }
 
-    await comment.save();
-    const upCount = comment.upvotes.length;
-    const downCount = comment.downvotes.length;
-    const score = upCount - downCount;
-    const userVote = comment.upvotes.some((id) => id.toString() === userId) ? 1 : comment.downvotes.some((id) => id.toString() === userId) ? -1 : 0;
+    store.update('comments', comment._id, { upvotes, downvotes });
+    const score = upvotes.length - downvotes.length;
+    const myVote = upvotes.includes(userId) ? 1 : downvotes.includes(userId) ? -1 : 0;
 
-    res.json({ score, userVote });
+    res.json({ score, myVote, userVote: myVote });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error voting on comment' });
   }
 });
 
 module.exports = router;
-

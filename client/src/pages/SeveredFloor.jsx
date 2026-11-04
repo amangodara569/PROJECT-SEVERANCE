@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import api from '../api/api';
 import LayoffRow from '../components/LayoffRow';
 import { useAuth } from '../context/AuthContext';
+import AsciiCustom from '../components/AsciiCustom';
+import AsciiArt from '../components/AsciiArt';
+import severedCounter from '../ascii/pieces/severed-counter';
+import severedBoard from '../ascii/pieces/severed-board';
 
 // The Severed Floor: real-time corporate layoff tracker and verification hub
 export default function SeveredFloor() {
@@ -78,13 +82,18 @@ export default function SeveredFloor() {
   return (
     <div className="space-y-4">
       {/* Tracker Header */}
-      <div className="p-6 border text-center space-y-2" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '2px' }}>
+      <div className="p-6 border text-center space-y-3" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '2px' }}>
         <h1 className="font-mono text-sm tracking-widest uppercase font-bold" style={{ color: 'var(--muted)' }}>
           THE SEVERED FLOOR
         </h1>
-        <div className="font-mono text-xs uppercase" style={{ color: 'var(--muted)' }}>Severed this month:</div>
-        <div className="font-mono text-3xl md:text-4xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-          {monthlyCount.toLocaleString()}
+        <div className="flex justify-center my-2">
+          <AsciiCustom make={severedCounter} options={{ value: monthlyCount }} size={12} />
+        </div>
+        <div className="font-mono text-xs uppercase" style={{ color: 'var(--muted)' }}>
+          Severed this month: <strong style={{ color: 'var(--text)' }}>{monthlyCount.toLocaleString()}</strong>
+        </div>
+        <div className="flex justify-center overflow-x-auto pt-2">
+          <AsciiCustom make={severedBoard} options={{ rows: layoffs }} size={10} still={true} tone="muted" />
         </div>
       </div>
 
@@ -130,8 +139,17 @@ export default function SeveredFloor() {
       {loading ? (
         <div className="font-mono text-xs" style={{ color: 'var(--muted)' }}>Loading...</div>
       ) : layoffs.length === 0 ? (
-        <div className="p-8 text-center border font-mono text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-          No layoffs reported for this query. The work is mysterious and important.
+        <div
+          className="p-8 text-center border font-mono text-xs flex flex-col items-center justify-center space-y-3"
+          style={{
+            borderColor: 'var(--border)',
+            color: 'var(--muted)',
+            backgroundColor: 'var(--surface)',
+            borderRadius: '2px'
+          }}
+        >
+          <AsciiArt piece="empty-no-results" size={12} still={true} tone="muted" />
+          <p>No layoffs reported for this query. The work is mysterious and important.</p>
         </div>
       ) : (
         <div className="space-y-2">

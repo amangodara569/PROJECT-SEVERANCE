@@ -87,7 +87,7 @@ export default function Profile() {
           <div className="p-3 border mt-3 font-mono text-[11px]" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}>
             <span className="font-bold">Innie Persona: {currentUser?.innieHandle}</span>
             <p className="mt-1" style={{ color: 'var(--muted)' }}>
-              Anonymous posts use this handle and are never linked to your public @{profile.username} profile.
+              Pseudonymous posts use this handle and are never linked to your public @{profile.username} profile.
             </p>
           </div>
         )}

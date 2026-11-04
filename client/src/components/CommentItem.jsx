@@ -3,6 +3,8 @@ import VoteButtons from './VoteButtons';
 import { useMode } from '../context/ModeContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
+import AsciiCustom from './AsciiCustom';
+import innieGlyph from '../ascii/pieces/innie-glyph';
 
 // Formats timestamp into relative format
 const timeAgo = (dateStr) => {
@@ -70,9 +72,16 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-[11px] mb-1" style={{ color: 'var(--muted)' }}>
-            <span className="font-semibold" style={{ color: 'var(--text)' }}>
-              {authorDisplay}
-            </span>
+            {comment.isInnie ? (
+              <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--text)' }}>
+                <AsciiCustom make={innieGlyph} options={{ handle: comment.innieHandle }} size={5} still={true} tone="text" />
+                <span>{authorDisplay}</span>
+              </span>
+            ) : (
+              <span className="font-semibold" style={{ color: 'var(--text)' }}>
+                {authorDisplay}
+              </span>
+            )}
             <span>·</span>
             <span>{timeAgo(comment.createdAt)}</span>
           </div>
@@ -129,6 +138,11 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
                   {isSubmitting ? 'Posting...' : 'Reply'}
                 </button>
               </div>
+              {isInnie && (
+                <p className="font-mono text-[10px] leading-relaxed pt-1" style={{ color: 'var(--muted)' }}>
+                  Innie hides your name from other users. It does not hide you from the platform. Never post details that identify you.
+                </p>
+              )}
             </form>
           )}
         </div>

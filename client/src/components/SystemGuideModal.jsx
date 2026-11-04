@@ -1,72 +1,245 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-// Guide chapters detailing all implemented MVP features
+// Detailed guide sections with beginner-friendly explanations and examples
 const GUIDE_SECTIONS = [
   {
-    id: 'sever',
-    title: '1. Innie / Outie Severance',
-    tag: 'Core Identity',
-    description: 'The app features a dual-identity architecture inspired by Severance.',
+    id: 'overview',
+    title: '1. What Is Linked Out?',
+    tag: 'Start Here',
+    description: 'Linked Out is a safe, honest community for people who have been laid off, are worried about layoffs, or just landed a new job. Think of it as a mix of Reddit and LinkedIn — but built for real talk, not corporate polish.',
     details: [
-      'Outie Mode (Default): Black background, white text. Posts display your real @username, headline, and public profile.',
-      'Innie Mode: Click "INNIE" on the navbar toggle. The UI smoothly inverts to white background, black text. All posts and comments display only your randomized Innie-XXXX handle.',
-      'Cryptographic Privacy: The server completely strips your real user ID from API responses for Innie posts, ensuring zero doxxing risk.'
+      {
+        heading: 'Why does this exist?',
+        text: 'Getting laid off can feel isolating. Linked Out gives you a place to vent, ask questions, track which companies are cutting jobs, find new opportunities, and celebrate when you land something new.'
+      },
+      {
+        heading: 'What can I do here?',
+        text: 'Write posts about your experience. Vote on others\' posts. Comment and reply. Browse company-specific communities called "Floors". Track layoff reports. Browse and share job openings.'
+      },
+      {
+        heading: 'Do I have to use my real name?',
+        text: 'No! You have two identities. Your "Outie" is your real profile (like LinkedIn). Your "Innie" is a pseudonymous handle like Innie-4821 that hides your identity completely. You can switch between them anytime.'
+      }
+    ]
+  },
+  {
+    id: 'innie-vs-outie',
+    title: '2. Innie vs Outie',
+    tag: 'Identity Modes',
+    description: 'The core feature of Linked Out. You have two personas — pick the right one depending on how much privacy you need.',
+    details: [
+      {
+        heading: '🌙 Outie Mode (Default)',
+        text: 'This is your real identity. Dark background, clean look. Your real @username appears on everything you post. Other users can click your name to see your profile, headline, and public posts. Use Outie when you\'re comfortable being public — like sharing a job listing or celebrating a new hire.'
+      },
+      {
+        heading: '☀️ Innie Mode',
+        text: 'This is your private identity. Light background (the colors flip). Instead of your username, everything you post shows a random handle like "Innie-4821". Nobody — not even other users — can see who wrote it. Use Innie when you want to vent about a company, share sensitive experiences, or ask awkward questions.'
+      },
+      {
+        heading: 'How to switch',
+        text: 'Click the OUTIE / INNIE toggle button in the top navbar. It switches instantly. The whole color theme changes so you always know which mode you\'re in.'
+      },
+      {
+        heading: 'Example: Outie post',
+        text: 'You write: "Just got an offer at StartupZero!" → It shows as: @priya_test · Employed · "Just got an offer at StartupZero!" → Anyone can see it\'s you, visit your profile, and congratulate you.'
+      },
+      {
+        heading: 'Example: Innie post',
+        text: 'You switch to Innie and write: "My manager at MegaCorp lied about the PIP process" → It shows as: Innie-2002 · "My manager at MegaCorp lied about the PIP process" → Nobody knows it\'s you. Not even admins see your name on the post.'
+      },
+      {
+        heading: 'Quick Comparison Table',
+        text: '• Outie: Real @username shown | Profile visible | Dark theme | Best for: job posts, celebrations, networking\n• Innie: Random Innie-XXXX handle | Profile hidden | Light theme | Best for: venting, sensitive questions, company criticism'
+      },
+      {
+        heading: '⚠️ Important Privacy Note',
+        text: 'Innie hides your name from other users. It does NOT hide you from the platform itself. So don\'t post your phone number or personal details — those could still identify you even behind an Innie handle.'
+      }
     ]
   },
   {
     id: 'feed',
-    title: '2. Feed, Discussions & Voting',
+    title: '3. Feed & Posts',
     tag: 'Community',
-    description: 'Tell your layoff story honestly without corporate filters.',
+    description: 'The home feed is where all the action happens. It\'s a stream of posts from everyone in the community — like a Reddit front page for layoff survivors.',
     details: [
-      'Post Composer: Write vents, questions, or recovery stories. Automatically tags your active Innie or Outie identity.',
-      'Vote Controls: Reddit-style ▲ and ▼ buttons dynamically calculate net scores. Clicking the same arrow removes your vote.',
-      '1-Level Threaded Comments: Deep nested replies automatically re-attach to root comments to keep discussions legible.',
-      'Sorting: Switch seamlessly between NEW (chronological) and TOP (highest net score).'
+      {
+        heading: 'Types of posts',
+        text: '• Vent — Let it out. Frustration, anger, dark humor about being laid off. Swearing is allowed.\n• Question — Ask the community anything. "How long did your severance take?" "Is Company X actually hiring?"\n• Hired — Celebrate landing a new job. This triggers a special Waffle Party animation!'
+      },
+      {
+        heading: 'How to create a post',
+        text: 'On the Home page, look for the post composer box at the top. Type a title, write your message, pick the post type (Vent / Question / Hired), optionally pick a Floor (company), and click "Post". Your current mode (Innie or Outie) determines whether your name or your Innie handle appears.'
+      },
+      {
+        heading: 'Sorting: NEW vs TOP',
+        text: 'Click the "NEW" or "TOP" tabs above the feed.\n• NEW = most recent posts first (like a timeline).\n• TOP = posts with the highest vote score first (most popular).'
+      },
+      {
+        heading: 'Filtering by type',
+        text: 'Use the All / Vents / Questions / Hired tabs to show only the type of post you want to see.'
+      },
+      {
+        heading: 'Voting (▲ and ▼)',
+        text: 'Every post has up and down arrows.\n• Click ▲ to upvote (you agree, it\'s helpful, or you support it). The score goes up by 1.\n• Click ▼ to downvote (you disagree or it\'s unhelpful). The score goes down by 1.\n• Click the same arrow again to undo your vote.\n• Example: A post has score 12. You click ▲ → it becomes 13. Click ▲ again → back to 12.'
+      }
+    ]
+  },
+  {
+    id: 'comments',
+    title: '4. Comments & Replies',
+    tag: 'Discussion',
+    description: 'Every post has a comment section. You can leave a top-level comment or reply to someone else\'s comment (one level deep).',
+    details: [
+      {
+        heading: 'How to comment',
+        text: 'Open any post by clicking its title. Scroll down to the "Leave a Comment" box. Type your message and click "Comment". Your current Innie/Outie mode applies here too.'
+      },
+      {
+        heading: 'How to reply to a comment',
+        text: 'Under any comment, click [ Reply ]. A small text box appears. Write your reply and click "Reply". Replies are shown indented under the original comment.'
+      },
+      {
+        heading: 'Voting on comments',
+        text: 'Comments have ▲ and ▼ arrows just like posts. Same rules — click to vote, click again to undo.'
+      },
+      {
+        heading: 'Example',
+        text: 'Post: "How long did severance payout take?"\n→ Comment by @aman_test: "Took 21 days for direct deposit."\n  → Reply by Innie-2002: "Watch out for the bonus tax rate — about 35-40%."'
+      }
     ]
   },
   {
     id: 'floors',
-    title: '3. Company Floors',
+    title: '5. Company Floors',
     tag: 'Networks',
-    description: 'Dedicated hubs for colleagues from the same enterprise.',
+    description: 'Floors are like subreddits — but each one is tied to a company. If you worked at TechNova, join the TechNova floor to connect with colleagues.',
     details: [
-      'Browse & Search: Search any company floor or explore member headcounts.',
-      'Create a Floor: Anyone can establish a company community in one click.',
-      'Join / Leave: Toggle floor membership to keep track of colleagues.'
+      {
+        heading: 'What is a Floor?',
+        text: 'A Floor is a community space for people connected to a specific company. It has a name (like "ByteForge"), a description, and a list of members. Posts can be tagged to a Floor so they show up in that company\'s feed.'
+      },
+      {
+        heading: 'How to browse Floors',
+        text: 'Click "Floors" in the left sidebar. You\'ll see a list of all company Floors with their member counts. Use the search box to find a specific company.'
+      },
+      {
+        heading: 'How to join or leave a Floor',
+        text: 'Open any Floor and click the "Join" button. Once joined, click "Leave" to exit. Joining adds the Floor\'s posts to your view and adds you to the member count.'
+      },
+      {
+        heading: 'How to create a Floor',
+        text: 'Click "Floors" → "Create Floor". Enter the company name and a short description. The system generates a URL-safe slug automatically (e.g., "MegaCorp India" becomes "megacorp-india").'
+      },
+      {
+        heading: 'Example',
+        text: 'Floor: "MegaCorp India" · 3 members\nDescription: "Ex-MegaCorp and current personnel sharing unvarnished experiences."\nPosts here: vents about MegaCorp\'s layoff process, questions about severance policies, etc.'
+      }
     ]
   },
   {
     id: 'tracker',
-    title: '4. The Severed Floor',
+    title: '6. The Severed Floor',
     tag: 'Layoff Tracker',
-    description: 'Real-time corporate workforce reduction tracking and verification.',
+    description: 'A real-time, crowdsourced tracker of corporate layoffs. Think of it as a public ledger where anyone can report and verify workforce reductions.',
     details: [
-      'Severed This Month: Live monospace counter summing verified layoffs in the current calendar month.',
-      'Crowdsourced Reports: Submit company reduction notices with headcount, date, and source links.',
-      'Peer Confirmation: Click [ Confirm ] on any report to verify accuracy and build trust.'
+      {
+        heading: 'What you see',
+        text: 'A big counter at the top shows "Severed This Month" — the total number of people affected by verified layoffs in the current month. Below that is a list of individual reports.'
+      },
+      {
+        heading: 'How to submit a layoff report',
+        text: 'Click "Report New Layoff". Enter the company name, approximate number of people affected, the date, an optional news source URL, and a short note. Click submit.'
+      },
+      {
+        heading: 'How confirmation works',
+        text: 'Each report shows a "Confirm" button and a trust level (number of confirmations). If you know the report is accurate, click [ Confirm ] to add your verification. More confirms = higher trust. You can only confirm once per report.'
+      },
+      {
+        heading: 'Example',
+        text: 'Report: "ByteForge · 210 people · Sept 12, 2026"\nNote: "Global platform consolidation."\nConfirmed by: 6 people ✓\nThis means 6 community members verified that the ByteForge layoff actually happened.'
+      }
     ]
   },
   {
     id: 'comeback',
-    title: '5. Comeback & Waffle Party',
+    title: '7. Comeback & Waffle Party',
     tag: 'Recovery',
-    description: 'Celebrating recovery and landing the next role.',
+    description: 'The light at the end of the tunnel. Browse job openings, share opportunities, and celebrate when you land your next role.',
     details: [
-      'Jobs Board: Post and browse open job opportunities with direct application links.',
-      'I Got Hired: Share a recovery post with type "Hired".',
-      'The Waffle Party: Submitting a hired post unlocks a full-screen retro celebration and upgrades your badge to Reintegrated.'
+      {
+        heading: 'Jobs Board',
+        text: 'Click "Comeback" in the sidebar. You\'ll see a list of job openings shared by community members. Each card shows the title, company, location, and a direct link to apply.'
+      },
+      {
+        heading: 'How to post a job',
+        text: 'Click "Post a Job" on the Comeback page. Enter the job title, company name, location, and the application link. This is for sharing real opportunities — if you\'re hiring or know someone who is.'
+      },
+      {
+        heading: 'The "Hired" post',
+        text: 'When you land a new job, create a post with type "Hired" (select it from the dropdown in the Post Composer). Tell the community your story!'
+      },
+      {
+        heading: '🧇 The Waffle Party',
+        text: 'When you submit a "Hired" post, something special happens: a full-screen retro celebration animation plays (the "Waffle Party"). Your status badge also changes from "Severed" to "Reintegrated". It\'s the community\'s way of celebrating your comeback.'
+      },
+      {
+        heading: 'Example',
+        text: 'Post: "Reintegrated at ByteForge after 5 grueling months"\nType: Hired\nResult: Waffle Party animation plays → your badge changes to ✓ Reintegrated'
+      }
     ]
   },
   {
     id: 'moderation',
-    title: '6. The Break Room & Safety',
-    tag: 'Language Rules',
-    description: 'Free words, not free targets.',
+    title: '8. Break Room & Safety',
+    tag: 'Rules',
+    description: 'Linked Out allows raw, honest expression — but has clear lines that protect people from doxxing and harassment.',
     details: [
-      'Allowed: Swearing, dark humor, anger, and harsh criticism of corporate management are 100% permitted.',
-      'Forbidden (Doxxing): Posting phone numbers or personal emails triggers the Break Room modal, holding the post for editing.',
-      'Community Moderation: 5 reports on any item automatically hide it from the platform.'
+      {
+        heading: '✅ What IS allowed',
+        text: '• Swearing ("What a f***ing joke of a severance package")\n• Dark humor ("My exit interview had better snacks than my 3 years of work")\n• Harsh criticism of companies and executives\n• Venting anger and frustration about being laid off\n• Speaking pseudonymously through your Innie identity'
+      },
+      {
+        heading: '🚫 What is NOT allowed (Doxxing)',
+        text: 'You cannot post phone numbers or personal email addresses. If you try, the "Break Room" screen appears — it blocks your post and asks you to remove the private info before resubmitting. Your text is saved so you don\'t lose your work.'
+      },
+      {
+        heading: 'Example: Break Room trigger',
+        text: 'You write: "Contact HR at 555-0199 to complain" → The Break Room appears: "DOXXING DETECTED. Remove personal contact information." → Edit out the phone number → Resubmit successfully.'
+      },
+      {
+        heading: 'Reporting content',
+        text: 'Every post and comment has a [ Report ] button. If something violates the rules (targeted harassment, threats), click Report. When an item receives 5 reports from different users, it\'s automatically hidden from the platform.'
+      },
+      {
+        heading: 'Admin Review Queue',
+        text: 'Flagged and auto-hidden items go into the Review Queue (visible only to admins). Admins can:\n• "Dismiss Reports" — clears all reports and restores the content to the public feed.\n• "Sever Transmission" — permanently deletes the content and all its comments.'
+      }
+    ]
+  },
+  {
+    id: 'profile',
+    title: '9. Your Profile',
+    tag: 'Identity',
+    description: 'Your public-facing page where other users can learn about you — but only what you\'ve chosen to share publicly.',
+    details: [
+      {
+        heading: 'What your profile shows',
+        text: 'Your @username, headline (like "Backend Dev, ex-Company X"), status badge (Employed / Severed / Reintegrated), bio, and a list of your Outie posts.'
+      },
+      {
+        heading: 'What your profile does NOT show',
+        text: 'It never shows your Innie posts. If you wrote 20 Innie vents about your old company, none of them appear on your profile. They are completely disconnected from your public identity.'
+      },
+      {
+        heading: 'Status badges',
+        text: '• Employed — You currently have a job.\n• Severed — You\'ve been laid off.\n• Reintegrated — You were laid off but landed a new role (set automatically when you post a "Hired" post).'
+      },
+      {
+        heading: 'How to view someone\'s profile',
+        text: 'Click any @username on a post or comment. It takes you to their profile page at /u/username.'
+      }
     ]
   }
 ];
@@ -81,7 +254,7 @@ export default function SystemGuideModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-mono">
       <div
-        className="w-full max-w-xl p-6 border flex flex-col max-h-[90vh] overflow-hidden"
+        className="w-full max-w-2xl p-6 border flex flex-col max-h-[90vh] overflow-hidden"
         style={{
           backgroundColor: 'var(--surface)',
           borderColor: 'var(--border)',
@@ -92,8 +265,8 @@ export default function SystemGuideModal({ isOpen, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between border-b pb-3 mb-4" style={{ borderColor: 'var(--border)' }}>
           <div>
-            <h2 className="text-sm font-bold tracking-[0.2em] uppercase">SYSTEM PROTOCOL & FEATURE GUIDE</h2>
-            <p className="text-[11px]" style={{ color: 'var(--muted)' }}>Orientation for Severed & Outie Personnel</p>
+            <h2 className="text-sm font-bold tracking-[0.2em] uppercase">LINKED OUT — USER MANUAL</h2>
+            <p className="text-[11px]" style={{ color: 'var(--muted)' }}>Everything you need to know. Click through each section.</p>
           </div>
           <button
             onClick={onClose}
@@ -104,7 +277,7 @@ export default function SystemGuideModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Navigation tabs */}
+        {/* Navigation tabs — scrollable row */}
         <div className="flex gap-1 overflow-x-auto pb-2 mb-4 border-b text-[10px]" style={{ borderColor: 'var(--border)' }}>
           {GUIDE_SECTIONS.map((sec, i) => (
             <button
@@ -136,25 +309,38 @@ export default function SystemGuideModal({ isOpen, onClose }) {
             </p>
           </div>
 
-          <div className="p-3 border space-y-2" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
-            <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--text)' }}>
-              How It Works & How To Use:
-            </span>
-            <ul className="space-y-2 font-sans text-xs" style={{ color: 'var(--muted)' }}>
-              {current.details.map((detail, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--text)' }}>▸</span>
-                  <span className="leading-relaxed">{detail}</span>
-                </li>
-              ))}
-            </ul>
+          {/* Detail blocks with headings */}
+          <div className="space-y-3">
+            {current.details.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-3 border space-y-1.5"
+                style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', borderRadius: '2px' }}
+              >
+                <span className="text-[11px] uppercase font-bold tracking-wider block" style={{ color: 'var(--text)' }}>
+                  {item.heading}
+                </span>
+                <p className="font-sans text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted)' }}>
+                  {item.text}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Footer actions */}
         <div className="flex items-center justify-between border-t pt-4 mt-4" style={{ borderColor: 'var(--border)' }}>
-          <div className="text-[10px]" style={{ color: 'var(--muted)' }}>
-            Section {activeTab + 1} of {GUIDE_SECTIONS.length}
+          <div className="text-[10px] flex items-center gap-3" style={{ color: 'var(--muted)' }}>
+            <span>Section {activeTab + 1} of {GUIDE_SECTIONS.length}</span>
+            {activeTab > 0 && (
+              <button
+                onClick={() => setActiveTab((prev) => prev - 1)}
+                className="px-2 py-0.5 border uppercase text-[10px] hover:opacity-80"
+                style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+              >
+                ← Back
+              </button>
+            )}
           </div>
           <div className="flex gap-2">
             {activeTab < GUIDE_SECTIONS.length - 1 ? (
@@ -171,7 +357,7 @@ export default function SystemGuideModal({ isOpen, onClose }) {
                 className="px-4 py-1.5 text-xs uppercase tracking-wider font-semibold border"
                 style={{ backgroundColor: 'var(--text)', color: 'var(--bg)', borderColor: 'var(--text)' }}
               >
-                Acknowledge Protocols
+                Got It — Close Guide
               </button>
             )}
           </div>
@@ -180,4 +366,3 @@ export default function SystemGuideModal({ isOpen, onClose }) {
     </div>
   );
 }
-

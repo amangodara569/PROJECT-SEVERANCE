@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../api/api';
 import PostComposer from '../components/PostComposer';
 import PostCard from '../components/PostCard';
+import AsciiArt from '../components/AsciiArt';
+import ErrorState from '../components/ErrorState';
 
 // Home page: main post feed with New/Top sorting and composer
 export default function Home() {
@@ -90,17 +92,24 @@ export default function Home() {
 
       {/* Error display */}
       {error && (
-        <div className="p-2 text-xs border font-mono" style={{ borderColor: 'var(--border)' }}>
-          {error}
-        </div>
+        <ErrorState message={error} onRetry={fetchPosts} />
       )}
 
       {/* Posts List */}
       {loading ? (
         <p className="font-mono text-xs" style={{ color: 'var(--muted)' }}>Loading...</p>
       ) : posts.length === 0 ? (
-        <div className="p-8 text-center border font-mono text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-          Nothing here yet. The work is mysterious and important.
+        <div
+          className="p-8 text-center border font-mono text-xs flex flex-col items-center justify-center space-y-3"
+          style={{
+            borderColor: 'var(--border)',
+            color: 'var(--muted)',
+            backgroundColor: 'var(--surface)',
+            borderRadius: '2px'
+          }}
+        >
+          <AsciiArt piece="empty-cobweb-folder" size={12} still={true} tone="muted" />
+          <p>Nothing here yet. The work is mysterious and important.</p>
         </div>
       ) : (
         <div className="space-y-3">

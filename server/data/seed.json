@@ -1,0 +1,811 @@
+{
+  "users": [
+    {
+      "key": "aman",
+      "username": "aman_test",
+      "email": "aman@lumon.com",
+      "password": "Test@1234",
+      "headline": "Lead System Architect at TechNova",
+      "bio": "Building distributed platforms. Pragmatic engineer.",
+      "status": "Employed",
+      "innieHandle": "Innie-1001",
+      "isAdmin": true
+    },
+    {
+      "key": "priya",
+      "username": "priya_test",
+      "email": "priya@lumon.com",
+      "password": "Test@1234",
+      "headline": "Ex-MegaCorp Senior Frontend Engineer",
+      "bio": "Severed after 4 years of loyal service. Speaking truth.",
+      "status": "Severed",
+      "innieHandle": "Innie-2002"
+    },
+    {
+      "key": "rahul",
+      "username": "rahul_test",
+      "email": "rahul@lumon.com",
+      "password": "Test@1234",
+      "headline": "Fullstack Dev searching for opportunities",
+      "bio": "Severed during the Q3 restructuring. Open to work.",
+      "status": "Severed",
+      "innieHandle": "Innie-3003"
+    },
+    {
+      "key": "meera",
+      "username": "meera_test",
+      "email": "meera@lumon.com",
+      "password": "Test@1234",
+      "headline": "Staff Engineer at ByteForge",
+      "bio": "Survived 2 layoffs, reintegrated at last. Recovery is real.",
+      "status": "Reintegrated",
+      "innieHandle": "Innie-4004"
+    },
+    {
+      "key": "sam",
+      "username": "sam_test",
+      "email": "sam@lumon.com",
+      "password": "Test@1234",
+      "headline": "Engineering Manager at StartupZero",
+      "bio": "Hiring talented engineers who got severed.",
+      "status": "Employed",
+      "innieHandle": "Innie-5005"
+    },
+    {
+      "key": "neha",
+      "username": "neha_test",
+      "email": "neha@lumon.com",
+      "password": "Test@1234",
+      "headline": "Product Designer looking for next role",
+      "bio": "Severed abruptly via an automated calendar invite.",
+      "status": "Severed",
+      "innieHandle": "Innie-6006"
+    }
+  ],
+  "floors": [
+    {
+      "key": "technova",
+      "name": "TechNova",
+      "slug": "technova",
+      "description": "TechNova engineering, product, and alumni community.",
+      "createdBy": "aman",
+      "members": ["aman", "priya", "sam"]
+    },
+    {
+      "key": "byteforge",
+      "name": "ByteForge",
+      "slug": "byteforge",
+      "description": "ByteForge developers, infrastructure folks, and reintegrated devs.",
+      "createdBy": "meera",
+      "members": ["meera", "rahul"]
+    },
+    {
+      "key": "stackly",
+      "name": "Stackly",
+      "slug": "stackly",
+      "description": "Stackly platform discussions, survival notes, and team memories.",
+      "createdBy": "neha",
+      "members": ["neha", "priya", "rahul"]
+    },
+    {
+      "key": "megacorp",
+      "name": "MegaCorp India",
+      "slug": "megacorp-india",
+      "description": "Ex-MegaCorp and current personnel sharing unvarnished experiences.",
+      "createdBy": "priya",
+      "members": ["priya", "rahul", "aman"]
+    },
+    {
+      "key": "startupzero",
+      "name": "StartupZero",
+      "slug": "startupzero",
+      "description": "The fast-paced reality of early stage startup cuts and growth.",
+      "createdBy": "sam",
+      "members": ["sam", "meera", "neha"]
+    }
+  ],
+  "posts": [
+    {
+      "key": "p1",
+      "title": "Laid off 15 minutes before all-hands with zero warning",
+      "body": "Logged into my laptop this morning to find Slack deactivated and an email from HR. What a fucking cowardly way to discard employees after 4 years of grinding. Swear these corporate executives have no spine.",
+      "type": "vent",
+      "floor": "megacorp",
+      "author": "priya",
+      "isInnie": false,
+      "ageMinutes": 25,
+      "upvotes": ["rahul", "meera", "neha"],
+      "extraUp": 45,
+      "extraDown": 2
+    },
+    {
+      "key": "p2",
+      "title": "How long did your severance package payout take?",
+      "body": "Got severance documents yesterday. Agreement says 30 business days. Did anyone get theirs earlier or do they drag it out?",
+      "type": "question",
+      "floor": "technova",
+      "author": "rahul",
+      "isInnie": true,
+      "ageHours": 2,
+      "upvotes": ["priya"],
+      "extraUp": 14,
+      "extraDown": 1
+    },
+    {
+      "key": "p3",
+      "title": "Reintegrated at ByteForge after 5 grueling months",
+      "body": "After 180 applications and endless ghosting, signed an offer today as Staff Engineer at ByteForge. Do not lose hope. The market is shit right now, but your value is real.",
+      "type": "hired",
+      "floor": "byteforge",
+      "author": "meera",
+      "isInnie": false,
+      "ageHours": 5,
+      "upvotes": ["aman", "priya", "rahul", "sam", "neha"],
+      "extraUp": 58,
+      "extraDown": 0
+    },
+    {
+      "key": "p4",
+      "title": "Silent layoffs happening in infra team right now",
+      "body": "They called it 'performance realignment', but 12 senior engineers just vanished from the directory. Classic stealth layoff strategy so they dont report WARN notices.",
+      "type": "vent",
+      "floor": "technova",
+      "author": "aman",
+      "isInnie": true,
+      "ageHours": 10,
+      "upvotes": ["priya", "rahul"],
+      "extraUp": 32,
+      "extraDown": 1
+    },
+    {
+      "key": "p5",
+      "title": "Should I sign the non-disparagement clause?",
+      "body": "Standard NDA clause in the severance packet. Two months pay attached to it. What did you folks do?",
+      "type": "question",
+      "floor": "stackly",
+      "author": "neha",
+      "isInnie": false,
+      "ageHours": 18,
+      "upvotes": ["rahul"],
+      "extraUp": 20,
+      "extraDown": 3
+    },
+    {
+      "key": "p6",
+      "title": "Signed my new contract today. We survived.",
+      "body": "Three months after getting cut from MegaCorp, starting as Senior Backend Dev on Monday. Waffle Party time. Keep going everyone.",
+      "type": "hired",
+      "floor": "megacorp",
+      "author": "sam",
+      "isInnie": false,
+      "ageDays": 1,
+      "upvotes": ["priya", "meera"],
+      "extraUp": 40,
+      "extraDown": 1
+    },
+    {
+      "key": "p7",
+      "title": "Townhall was a complete circus today",
+      "body": "CEO literally said 'we are a family' right after axing 200 people. You dont fire family over Google Meet, you greedy hypocrites.",
+      "type": "vent",
+      "floor": "megacorp",
+      "author": "priya",
+      "isInnie": true,
+      "ageDays": 2,
+      "upvotes": ["rahul", "neha"],
+      "extraUp": 55,
+      "extraDown": 2
+    },
+    {
+      "key": "p8",
+      "title": "Anyone transitioning from design to front-end?",
+      "body": "Seeing way more FE openings than pure product design right now. Looking for tips on bridging the gap quickly.",
+      "type": "question",
+      "floor": "startupzero",
+      "author": "neha",
+      "isInnie": true,
+      "ageDays": 3,
+      "upvotes": ["aman"],
+      "extraUp": 11,
+      "extraDown": 0
+    },
+    {
+      "key": "p9",
+      "title": "Worst severance package you have ever received?",
+      "body": "StartupZero offered 2 weeks after 3 years. Fucking insulting. Share your worst stories so we can laugh through the misery.",
+      "type": "vent",
+      "floor": "startupzero",
+      "author": "sam",
+      "isInnie": true,
+      "ageDays": 4,
+      "upvotes": ["priya", "rahul"],
+      "extraUp": 38,
+      "extraDown": 5
+    },
+    {
+      "key": "p10",
+      "title": "Health insurance cobra costs are criminal",
+      "body": "Quoted $1,400 a month for COBRA continuation. Who the hell has fourteen hundred bucks a month when they just lost their income?",
+      "type": "vent",
+      "floor": null,
+      "author": "rahul",
+      "isInnie": false,
+      "ageDays": 5,
+      "upvotes": ["priya", "neha"],
+      "extraUp": 48,
+      "extraDown": 1
+    },
+    {
+      "key": "p11",
+      "title": "Tips for handling recruiter ghosting?",
+      "body": "Made it to 4 rounds of interviews, then complete radio silence. How do you all handle the mental fatigue?",
+      "type": "question",
+      "floor": null,
+      "author": "priya",
+      "isInnie": true,
+      "ageDays": 6,
+      "upvotes": ["sam"],
+      "extraUp": 25,
+      "extraDown": 2
+    },
+    {
+      "key": "p12",
+      "title": "Unpopular opinion: Being severed was the best thing that happened to me",
+      "body": "I was working 70 hour weeks burning out for a company that replaced me in 10 minutes. It gave me my life back.",
+      "type": "vent",
+      "floor": null,
+      "author": "meera",
+      "isInnie": false,
+      "ageDays": 7,
+      "upvotes": ["aman", "sam"],
+      "extraUp": 52,
+      "extraDown": 8
+    },
+    {
+      "key": "p13",
+      "title": "Contracting vs full-time while job hunting?",
+      "body": "Got an offer for a 3-month contract. Will it hurt my chances for full-time roles or keep me afloat?",
+      "type": "question",
+      "floor": "byteforge",
+      "author": "rahul",
+      "isInnie": false,
+      "ageDays": 8,
+      "upvotes": ["meera"],
+      "extraUp": 16,
+      "extraDown": 1
+    },
+    {
+      "key": "p14",
+      "title": "TechNova cutting another 10% next quarter according to leadership leak",
+      "body": "VP slipped up during QBR planning. If you are on probation or PIP, start interviewing elsewhere yesterday.",
+      "type": "vent",
+      "floor": "technova",
+      "author": "aman",
+      "isInnie": true,
+      "ageDays": 9,
+      "upvotes": ["priya"],
+      "extraUp": 44,
+      "extraDown": 3
+    },
+    {
+      "key": "p15",
+      "title": "Controversial take: severance packages should be legally mandated",
+      "body": "One week per year of service is pure exploitation. European workers get months of notice. US and Indian labor laws need reform.",
+      "type": "vent",
+      "floor": null,
+      "author": "priya",
+      "isInnie": false,
+      "ageDays": 10,
+      "upvotes": ["rahul", "neha", "sam"],
+      "extraUp": 60,
+      "extraDown": 4
+    },
+    {
+      "key": "p16",
+      "title": "This post has been reported multiple times by community",
+      "body": "Questionable post that accumulated 4 community reports. Right on the borderline of moderation limits.",
+      "type": "vent",
+      "floor": null,
+      "author": "sam",
+      "isInnie": true,
+      "ageDays": 11,
+      "upvotes": [],
+      "extraUp": 2,
+      "extraDown": 5,
+      "reportCount": 4
+    },
+    {
+      "key": "p17",
+      "title": "Hidden post that exceeded report threshold",
+      "body": "This post reached 5 community reports and was automatically hidden from feed queries.",
+      "type": "vent",
+      "floor": null,
+      "author": "rahul",
+      "isInnie": true,
+      "ageDays": 12,
+      "upvotes": [],
+      "extraUp": 1,
+      "extraDown": 10,
+      "reportCount": 5,
+      "hidden": true
+    },
+    {
+      "key": "p18",
+      "title": "Rejoined startup ecosystem after 6 months severance",
+      "body": "Back in the game as Principal Architect at StartupZero. Thanks to everyone here who gave mock interviews.",
+      "type": "hired",
+      "floor": "startupzero",
+      "author": "aman",
+      "isInnie": false,
+      "ageDays": 14,
+      "upvotes": ["priya", "meera", "sam"],
+      "extraUp": 48,
+      "extraDown": 0
+    },
+    {
+      "key": "p19",
+      "title": "How to explain a 6-month employment gap to conservative recruiters?",
+      "body": "Should I just write 'career transition' on LinkedIn, or be blunt about the layoff?",
+      "type": "question",
+      "floor": "megacorp",
+      "author": "priya",
+      "isInnie": true,
+      "ageDays": 16,
+      "upvotes": ["rahul"],
+      "extraUp": 18,
+      "extraDown": 1
+    },
+    {
+      "key": "p20",
+      "title": "The psychological damage of PIP culture",
+      "body": "PIPs are not designed to help you improve. They are legal protection for companies firing you for free. Fight me.",
+      "type": "vent",
+      "floor": "stackly",
+      "author": "neha",
+      "isInnie": false,
+      "ageDays": 18,
+      "upvotes": ["priya", "sam", "meera"],
+      "extraUp": 55,
+      "extraDown": 2
+    },
+    {
+      "key": "p21",
+      "title": "Resume review thread for severed product designers",
+      "body": "Dropping portfolio advice for anyone navigating this brutal hiring market. Happy to critique.",
+      "type": "question",
+      "floor": "stackly",
+      "author": "neha",
+      "isInnie": true,
+      "ageDays": 20,
+      "upvotes": ["sam"],
+      "extraUp": 22,
+      "extraDown": 1
+    },
+    {
+      "key": "p22",
+      "title": "Do companies still care about cover letters?",
+      "body": "Spent 2 hours customizing cover letters for 30 jobs. Wondering if anyone actually reads them or ATS dumps them.",
+      "type": "question",
+      "floor": null,
+      "author": "rahul",
+      "isInnie": false,
+      "ageDays": 22,
+      "upvotes": ["priya"],
+      "extraUp": 15,
+      "extraDown": 4
+    },
+    {
+      "key": "p23",
+      "title": "Lumon Industries homage: Remember we are people first",
+      "body": "A cold reminder that our labor does not define our souls. Praise Kier, or rather, praise yourself for surviving.",
+      "type": "vent",
+      "floor": null,
+      "author": "aman",
+      "isInnie": true,
+      "ageDays": 25,
+      "upvotes": ["meera", "rahul", "neha"],
+      "extraUp": 41,
+      "extraDown": 1
+    },
+    {
+      "key": "p24",
+      "title": "The post that got downvoted to oblivion",
+      "body": "Unhelpful corporate apologetics that the community rightly rejected.",
+      "type": "vent",
+      "floor": null,
+      "author": "sam",
+      "isInnie": true,
+      "ageDays": 28,
+      "upvotes": [],
+      "extraUp": 1,
+      "extraDown": 4
+    },
+    {
+      "key": "p25",
+      "title": "First day at new job recap",
+      "body": "After 4 months in severance limbo, today was Day 1. Friendly team, zero toxicity so far. Keep pushing.",
+      "type": "hired",
+      "floor": "technova",
+      "author": "rahul",
+      "isInnie": false,
+      "ageDays": 30,
+      "upvotes": ["priya", "aman", "meera"],
+      "extraUp": 50,
+      "extraDown": 1
+    }
+  ],
+  "comments": [
+    {
+      "key": "c1",
+      "post": "p1",
+      "author": "rahul",
+      "body": "Same exact thing happened to our team last month. Disgraceful.",
+      "isInnie": false,
+      "ageMinutes": 20,
+      "upvotes": ["priya", "meera"],
+      "extraUp": 8
+    },
+    {
+      "key": "c2",
+      "post": "p1",
+      "parent": "c1",
+      "author": "priya",
+      "body": "Did they offer any outplacement support or just a PDF brochure?",
+      "isInnie": false,
+      "ageMinutes": 15,
+      "upvotes": ["rahul"],
+      "extraUp": 5
+    },
+    {
+      "key": "c3",
+      "post": "p1",
+      "parent": "c1",
+      "author": "neha",
+      "body": "They gave us a 1-month LinkedIn Learning voucher. Total slap in the face.",
+      "isInnie": true,
+      "ageMinutes": 10,
+      "upvotes": ["priya"],
+      "extraUp": 12
+    },
+    {
+      "key": "c4",
+      "post": "p1",
+      "author": "sam",
+      "body": "I manage engineering at StartupZero. If you are a senior FE dev, DM me your portfolio.",
+      "isInnie": false,
+      "ageMinutes": 8,
+      "upvotes": ["priya", "rahul"],
+      "extraUp": 25
+    },
+    {
+      "key": "c5",
+      "post": "p2",
+      "author": "aman",
+      "body": "Took exactly 21 days for my direct deposit to hit. Watch out for tax withholding though.",
+      "isInnie": false,
+      "ageHours": 1,
+      "upvotes": ["rahul"],
+      "extraUp": 6
+    },
+    {
+      "key": "c6",
+      "post": "p2",
+      "parent": "c5",
+      "author": "priya",
+      "body": "Yes, bonus tax rate applies so it is taxed around 35-40% upfront.",
+      "isInnie": true,
+      "ageHours": 1,
+      "upvotes": ["aman"],
+      "extraUp": 4
+    },
+    {
+      "key": "c7",
+      "post": "p3",
+      "author": "priya",
+      "body": "Huge congratulations Meera! So well deserved after everything.",
+      "isInnie": false,
+      "ageHours": 4,
+      "upvotes": ["meera"],
+      "extraUp": 14
+    },
+    {
+      "key": "c8",
+      "post": "p3",
+      "author": "rahul",
+      "body": "Enjoy the Waffle Party! Gives all of us hope.",
+      "isInnie": false,
+      "ageHours": 3,
+      "upvotes": ["meera"],
+      "extraUp": 9
+    },
+    {
+      "key": "c9",
+      "post": "p4",
+      "author": "rahul",
+      "body": "Can confirm. Two friends on the SRE team lost access today without warning.",
+      "isInnie": true,
+      "ageHours": 9,
+      "upvotes": ["aman"],
+      "extraUp": 18
+    },
+    {
+      "key": "c10",
+      "post": "p5",
+      "author": "sam",
+      "body": "Consult an employment lawyer first. Most non-disparagements are toothless, but do not sign blindly.",
+      "isInnie": false,
+      "ageHours": 17,
+      "upvotes": ["neha"],
+      "extraUp": 15
+    },
+    {
+      "key": "c11",
+      "post": "p6",
+      "author": "neha",
+      "body": "Welcome back to the employed side Sam!",
+      "isInnie": false,
+      "ageHours": 20,
+      "upvotes": ["sam"],
+      "extraUp": 7
+    },
+    {
+      "key": "c12",
+      "post": "p7",
+      "author": "rahul",
+      "body": "The 'family' talk makes me physically sick. We are labor, not blood.",
+      "isInnie": true,
+      "ageDays": 2,
+      "upvotes": ["priya"],
+      "extraUp": 30
+    },
+    {
+      "key": "c13",
+      "post": "p8",
+      "author": "aman",
+      "body": "Focus on React + Tailwind fundamentals. Build 2 real projects that handle state and API calls.",
+      "isInnie": false,
+      "ageDays": 3,
+      "upvotes": ["neha"],
+      "extraUp": 11
+    },
+    {
+      "key": "c14",
+      "post": "p9",
+      "author": "priya",
+      "body": "A friend got zero weeks severance and was told their final paycheck was 'goodwill'.",
+      "isInnie": true,
+      "ageDays": 4,
+      "upvotes": ["sam"],
+      "extraUp": 22
+    },
+    {
+      "key": "c15",
+      "post": "p10",
+      "author": "meera",
+      "body": "Look into ACA healthcare marketplace. Subsidies kick in heavily when income drops to zero.",
+      "isInnie": false,
+      "ageDays": 5,
+      "upvotes": ["rahul"],
+      "extraUp": 26
+    },
+    {
+      "key": "c16",
+      "post": "p11",
+      "author": "neha",
+      "body": "Recruiters are overwhelmed too, but ghosting after 4 rounds is unprofessional. Name and shame.",
+      "isInnie": true,
+      "ageDays": 6,
+      "upvotes": ["priya"],
+      "extraUp": 17
+    },
+    {
+      "key": "c17",
+      "post": "p12",
+      "author": "rahul",
+      "body": "Needed to hear this today. Severance gave me time to see my kids grow up.",
+      "isInnie": false,
+      "ageDays": 7,
+      "upvotes": ["meera"],
+      "extraUp": 19
+    },
+    {
+      "key": "c18",
+      "post": "p13",
+      "author": "aman",
+      "body": "Contracting keeps your cash flow intact and gaps off your resume. Take it.",
+      "isInnie": false,
+      "ageDays": 8,
+      "upvotes": ["rahul"],
+      "extraUp": 8
+    },
+    {
+      "key": "c19",
+      "post": "p14",
+      "author": "sam",
+      "body": "Hearing the same rumor from our investors. TechNova is bleeding cash.",
+      "isInnie": true,
+      "ageDays": 9,
+      "upvotes": ["aman"],
+      "extraUp": 24
+    },
+    {
+      "key": "c20",
+      "post": "p15",
+      "author": "neha",
+      "body": "In the UK it is statutory redundancy pay by law. US tech workers are unprotected.",
+      "isInnie": false,
+      "ageDays": 10,
+      "upvotes": ["priya"],
+      "extraUp": 33
+    },
+    {
+      "key": "c21",
+      "post": "p18",
+      "author": "priya",
+      "body": "Principal Architect! So proud of you Aman.",
+      "isInnie": false,
+      "ageDays": 13,
+      "upvotes": ["aman"],
+      "extraUp": 12
+    },
+    {
+      "key": "c22",
+      "post": "p19",
+      "author": "sam",
+      "body": "Just say you were affected by mass workforce reductions. Everyone knows 2024-2026 tech layoffs.",
+      "isInnie": false,
+      "ageDays": 15,
+      "upvotes": ["priya"],
+      "extraUp": 21
+    },
+    {
+      "key": "c23",
+      "post": "p20",
+      "author": "aman",
+      "body": "As an engineering leader, I can confirm PIPs are 90% pre-determined exits.",
+      "isInnie": false,
+      "ageDays": 17,
+      "upvotes": ["neha"],
+      "extraUp": 40
+    },
+    {
+      "key": "c24",
+      "post": "p21",
+      "author": "rahul",
+      "body": "Sent you a message with my Figma link, thank you so much!",
+      "isInnie": false,
+      "ageDays": 19,
+      "upvotes": ["neha"],
+      "extraUp": 5
+    },
+    {
+      "key": "c25",
+      "post": "p23",
+      "author": "priya",
+      "body": "The work is mysterious and important. But dinner with family is real.",
+      "isInnie": true,
+      "ageDays": 24,
+      "upvotes": ["aman"],
+      "extraUp": 16
+    }
+  ],
+  "layoffs": [
+    {
+      "company": "MegaCorp India",
+      "date": "2026-11-01T10:00:00.000Z",
+      "peopleAffected": 450,
+      "sourceUrl": "https://news.example.com/megacorp-reduces-workforce",
+      "note": "Engineering and support divisions affected across Bengaluru and Hyderabad.",
+      "addedBy": "priya",
+      "confirms": ["priya", "rahul", "meera", "sam", "aman", "neha"]
+    },
+    {
+      "company": "TechNova",
+      "date": "2026-11-02T08:30:00.000Z",
+      "peopleAffected": 120,
+      "sourceUrl": "",
+      "note": "Cloud operations and DevOps teams restructured.",
+      "addedBy": "aman",
+      "confirms": ["aman", "rahul"]
+    },
+    {
+      "company": "Stackly",
+      "date": "2026-10-15T09:00:00.000Z",
+      "peopleAffected": 80,
+      "sourceUrl": "https://techpulse.example.com/stackly-cuts",
+      "note": "Product design and marketing staff cut following merger.",
+      "addedBy": "neha",
+      "confirms": ["neha", "priya"]
+    },
+    {
+      "company": "StartupZero",
+      "date": "2026-10-28T14:00:00.000Z",
+      "peopleAffected": 25,
+      "sourceUrl": "",
+      "note": "Sales and business development downsizing.",
+      "addedBy": "sam",
+      "confirms": ["sam"]
+    },
+    {
+      "company": "ByteForge",
+      "date": "2026-09-12T11:00:00.000Z",
+      "peopleAffected": 210,
+      "sourceUrl": "https://reuters.example.com/byteforge-restructuring",
+      "note": "Global platform consolidation.",
+      "addedBy": "meera",
+      "confirms": ["meera", "priya", "rahul", "sam", "aman", "neha"]
+    },
+    {
+      "company": "FinStream Technologies",
+      "date": "2026-11-01T15:00:00.000Z",
+      "peopleAffected": 65,
+      "sourceUrl": "",
+      "note": "Payments platform cut 30% of engineering.",
+      "addedBy": "rahul",
+      "confirms": ["rahul", "priya"]
+    },
+    {
+      "company": "HyperScale Logistics",
+      "date": "2026-08-20T12:00:00.000Z",
+      "peopleAffected": 300,
+      "sourceUrl": "",
+      "note": "Automated warehouse division laid off prior to funding round.",
+      "addedBy": "sam",
+      "confirms": []
+    },
+    {
+      "company": "OmniGlobal Software",
+      "date": "2026-10-05T09:00:00.000Z",
+      "peopleAffected": 150,
+      "sourceUrl": "https://dailybiz.example.com/omniglobal-reduction",
+      "note": "Legacy enterprise tooling division sunset.",
+      "addedBy": "aman",
+      "confirms": ["aman", "sam"]
+    }
+  ],
+  "jobs": [
+    {
+      "title": "Senior Frontend Engineer (React/Tailwind)",
+      "company": "StartupZero",
+      "location": "Remote (India/US)",
+      "link": "https://jobs.example.com/startupzero/fe",
+      "postedBy": "sam"
+    },
+    {
+      "title": "Backend Systems Architect (Node.js/Go)",
+      "company": "ByteForge",
+      "location": "Bengaluru / Hybrid",
+      "link": "https://byteforge.example.com/careers/arch",
+      "postedBy": "meera"
+    },
+    {
+      "title": "Lead Product Designer",
+      "company": "Stackly",
+      "location": "Remote",
+      "link": "https://stackly.example.com/jobs/design",
+      "postedBy": "neha"
+    },
+    {
+      "title": "DevOps & Infrastructure Engineer",
+      "company": "TechNova",
+      "location": "Remote",
+      "link": "https://technova.example.com/careers/infra",
+      "postedBy": "aman"
+    },
+    {
+      "title": "Full Stack Engineer (MERN)",
+      "company": "NovaSpark Labs",
+      "location": "Delhi NCR / Remote",
+      "link": "https://novaspark.example.com/apply",
+      "postedBy": "priya"
+    },
+    {
+      "title": "Engineering Manager - Platform",
+      "company": "CloudNative Systems",
+      "location": "Remote",
+      "link": "https://cloudnative.example.com/em",
+      "postedBy": "sam"
+    }
+  ]
+}
+

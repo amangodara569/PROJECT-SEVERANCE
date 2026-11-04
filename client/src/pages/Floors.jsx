@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import AsciiArt from '../components/AsciiArt';
 
 // Floors page: list, search, create, and join company communities
 export default function Floors() {
@@ -123,8 +124,17 @@ export default function Floors() {
       {loading ? (
         <p className="font-mono text-xs" style={{ color: 'var(--muted)' }}>Loading...</p>
       ) : floors.length === 0 ? (
-        <div className="p-8 text-center border font-mono text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-          No floors found. The work is mysterious and important.
+        <div
+          className="p-8 text-center border font-mono text-xs flex flex-col items-center justify-center space-y-3"
+          style={{
+            borderColor: 'var(--border)',
+            color: 'var(--muted)',
+            backgroundColor: 'var(--surface)',
+            borderRadius: '2px'
+          }}
+        >
+          <AsciiArt piece="empty-no-results" size={12} still={true} tone="muted" />
+          <p>No floors found. The work is mysterious and important.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

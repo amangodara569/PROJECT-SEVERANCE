@@ -1,3 +1,5 @@
+import AsciiArt from './AsciiArt';
+
 // Full-screen celebration screen shown upon posting a "hired" recovery story
 export default function WaffleParty({ onContinue }) {
   return (
@@ -5,14 +7,9 @@ export default function WaffleParty({ onContinue }) {
       className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center select-none transition-opacity duration-500 animate-fadeIn"
       style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
     >
-      {/* CSS grid waffle icon */}
-      <div
-        className="w-24 h-24 border-2 grid grid-cols-3 grid-rows-3 gap-1 p-1 mb-8"
-        style={{ borderColor: 'var(--text)' }}
-      >
-        {Array.from({ length: 9 }).map((_, i) => (
-          <div key={i} className="border" style={{ borderColor: 'var(--text)' }} />
-        ))}
+      {/* ASCII waffle iron open celebration */}
+      <div className="mb-6 flex justify-center">
+        <AsciiArt piece="waffle-iron-open" size={14} still={false} tone="text" />
       </div>
 
       <h1 className="font-mono text-2xl md:text-3xl font-bold tracking-[0.25em] uppercase mb-2">

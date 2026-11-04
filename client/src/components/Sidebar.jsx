@@ -46,6 +46,25 @@ export default function Sidebar() {
             {item.label}
           </NavLink>
         ))}
+
+        {user?.isAdmin && (
+          <NavLink
+            to="/review"
+            className={({ isActive }) =>
+              `px-3 py-2 border mt-3 transition-colors ${
+                isActive ? 'font-bold' : 'hover:opacity-80'
+              }`
+            }
+            style={({ isActive }) => ({
+              backgroundColor: isActive ? 'var(--surface)' : 'transparent',
+              borderColor: 'var(--border)',
+              color: 'var(--text)',
+              borderRadius: '2px'
+            })}
+          >
+            [ Review Queue ]
+          </NavLink>
+        )}
       </aside>
 
       {/* Mobile bottom navigation bar */}

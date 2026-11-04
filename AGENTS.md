@@ -11,6 +11,7 @@ This file is read at the start of every session. Follow it without being told.
    - `docs/build.md`: the row of the current step in section 6.
    - `docs/design.md`: the section of the feature being built.
    - `docs/interface.md`: the screen or component being built.
+   - `docs/ascii.md`: only when working on ASCII art.
    Never read these three files fully.
 4. Say one line: `Resuming Step N: <name>.` Then start working. Do not ask what to do.
 
@@ -23,7 +24,7 @@ Check `docs/rea-notes.md` first: if the feature was already studied, reuse the n
 
 ## 3. End of every step
 
-1. Update `docs/progress.md` (format is written inside that file).
+1. Update `docs/progress.md` (format is written inside that file). Tested = yes ONLY when I write "tested" or "works" for that step. "continue" or "next" means move on but keep Tested = no.
 2. Reply in the short format from `docs/tokens.md`.
 3. STOP. Wait for me to say `continue` or `next`.
 

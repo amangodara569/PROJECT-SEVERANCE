@@ -150,6 +150,11 @@ export default function PostPage() {
             {submitting ? 'Posting...' : 'Comment'}
           </button>
         </div>
+        {isInnie && (
+          <p className="font-mono text-[11px] leading-relaxed pt-1" style={{ color: 'var(--muted)' }}>
+            Innie hides your name from other users. It does not hide you from the platform. Never post details that identify you.
+          </p>
+        )}
       </form>
 
       {/* Comments List */}

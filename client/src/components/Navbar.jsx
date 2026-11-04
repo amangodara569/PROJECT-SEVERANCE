@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SeverToggle from './SeverToggle';
@@ -8,11 +8,11 @@ import SystemGuideModal from './SystemGuideModal';
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [showGuide, setShowGuide] = useState(() => {
-    return sessionStorage.getItem('dismissedGuide') !== 'true';
+    return localStorage.getItem('hasSeenSystemGuide') !== 'true';
   });
 
   const handleCloseGuide = () => {
-    sessionStorage.setItem('dismissedGuide', 'true');
+    localStorage.setItem('hasSeenSystemGuide', 'true');
     setShowGuide(false);
   };
 
@@ -43,19 +43,32 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setShowGuide(true)}
-              className="px-2 py-1 text-[11px] font-mono border hover:opacity-80 uppercase"
+              className="px-2 py-0.5 text-xs font-mono font-bold border hover:opacity-80"
               style={{
                 borderColor: 'var(--border)',
                 color: 'var(--text)',
                 backgroundColor: 'var(--surface)'
               }}
-              title="View orientation and feature guide"
+              title="System Guide (?)"
             >
-              [ Guide ]
+              ?
             </button>
 
             {user && (
               <div className="flex items-center gap-3 font-mono text-xs">
+                {user.isAdmin && (
+                  <Link
+                    to="/review"
+                    className="px-2 py-0.5 text-[11px] border uppercase hover:opacity-80"
+                    style={{
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      backgroundColor: 'var(--surface)'
+                    }}
+                  >
+                    Audit
+                  </Link>
+                )}
                 <Link
                   to={`/u/${user.username}`}
                   className="hover:underline"

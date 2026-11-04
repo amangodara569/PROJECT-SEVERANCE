@@ -1,41 +1,76 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const Post = require('../models/Post');
-const User = require('../models/User');
+const store = require('../db/store');
+const { makePost } = require('../models/Post');
 const auth = require('../middleware/auth');
 const { checkContent } = require('../utils/checkPost');
+const { validatePost } = require('../utils/validate');
 
 const router = express.Router();
 
-// Helper to sanitize post object and hide real author if posted in Innie mode
+// Helper to format post with populated floor/author and strict privacy rules
 const sanitizePost = (post, currentUserId = null) => {
-  const obj = post.toObject ? post.toObject() : { ...post };
-  const upCount = obj.upvotes?.length || 0;
-  const downCount = obj.downvotes?.length || 0;
-  obj.score = upCount - downCount;
+  const upCount = post.upvotes?.length || 0;
+  const downCount = post.downvotes?.length || 0;
+  const score = upCount - downCount;
 
-  // Determine current user's vote state
+  let myVote = 0;
+  let isOwner = false;
   if (currentUserId) {
-    const isUp = obj.upvotes?.some((id) => id.toString() === currentUserId.toString());
-    const isDown = obj.downvotes?.some((id) => id.toString() === currentUserId.toString());
-    obj.userVote = isUp ? 1 : isDown ? -1 : 0;
-    obj.isOwner = obj.author?._id?.toString() === currentUserId.toString() || obj.author?.toString() === currentUserId.toString();
-  } else {
-    obj.userVote = 0;
-    obj.isOwner = false;
+    const uid = currentUserId.toString();
+    const isUp = (post.upvotes || []).some((id) => id.toString() === uid);
+    const isDown = (post.downvotes || []).some((id) => id.toString() === uid);
+    myVote = isUp ? 1 : isDown ? -1 : 0;
+    isOwner = post.author && post.author.toString() === uid;
   }
 
-  // Strict Privacy: Never send real author ID or username for Innie posts
-  if (obj.isInnie) {
-    delete obj.author;
+  // Populate floor details
+  let floorData = null;
+  if (post.floor) {
+    const f = store.findById('floors', post.floor);
+    if (f) floorData = { _id: f._id, name: f.name, slug: f.slug };
   }
 
-  delete obj.upvotes;
-  delete obj.downvotes;
-  return obj;
+  let innieHandle = post.innieHandle;
+  if (post.isInnie && !innieHandle && post.author) {
+    const a = store.findById('users', post.author);
+    if (a) innieHandle = a.innieHandle;
+  }
+
+  const result = {
+    _id: post._id,
+    title: post.title,
+    body: post.body,
+    type: post.type,
+    floor: floorData,
+    isInnie: Boolean(post.isInnie),
+    innieHandle: Boolean(post.isInnie) ? (innieHandle || 'Innie-0000') : null,
+    commentCount: post.commentCount || 0,
+    reportCount: post.reportCount || 0,
+    score,
+    myVote,
+    userVote: myVote,
+    isOwner,
+    createdAt: post.createdAt
+  };
+
+  // Strict Privacy: Never return author (id, username, email) for Innie posts
+  if (!post.isInnie && post.author) {
+    const authorUser = store.findById('users', post.author);
+    if (authorUser) {
+      result.author = {
+        _id: authorUser._id,
+        username: authorUser.username,
+        headline: authorUser.headline || '',
+        status: authorUser.status || 'Employed'
+      };
+    }
+  }
+
+  return result;
 };
 
-// Optional auth helper to read token without blocking unauthenticated requests
+// Optional token extractor
 const getUserIdFromHeader = (req) => {
   try {
     const authHeader = req.headers.authorization;
@@ -43,30 +78,30 @@ const getUserIdFromHeader = (req) => {
       const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
       return decoded.id;
     }
-  } catch (e) {
-    // Ignore invalid tokens on public reads
-  }
+  } catch (e) {}
   return null;
 };
 
-// GET /api/posts - Feed of posts with floor and sort filters
-router.get('/', async (req, res) => {
+// GET /api/posts - Feed of posts with optional floor and sorting
+router.get('/', (req, res) => {
   try {
     const { floor, sort } = req.query;
-    const filter = { hidden: { $ne: true } };
-    if (floor) filter.floor = floor;
+    let posts = store.getAll('posts').filter((p) => !p.hidden);
 
-    let posts = await Post.find(filter)
-      .populate('floor', 'name slug')
-      .populate('author', 'username headline status')
-      .sort({ createdAt: -1 });
+    if (floor) {
+      // Filter by floor ID or slug
+      const matchedFloor = store.findOne('floors', (f) => f._id === floor || f.slug === floor);
+      const floorId = matchedFloor ? matchedFloor._id : floor;
+      posts = posts.filter((p) => p.floor && p.floor.toString() === floorId.toString());
+    }
 
     const currentUserId = getUserIdFromHeader(req);
     let sanitized = posts.map((p) => sanitizePost(p, currentUserId));
 
-    // Sort by Top score if requested
     if (sort === 'top') {
       sanitized.sort((a, b) => b.score - a.score);
+    } else {
+      sanitized.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     res.json({ posts: sanitized });
@@ -76,14 +111,14 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/posts - Create a new post (Outie or Innie)
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, (req, res) => {
   try {
     const { title, body, type, floor, isInnie } = req.body;
-    if (!title?.trim() || !body?.trim()) {
-      return res.status(400).json({ error: 'Title and body are required' });
-    }
 
-    // Doxx check: Block phone numbers and email addresses
+    const validationErr = validatePost(title, body);
+    if (validationErr) return res.status(400).json({ error: validationErr });
+
+    // Doxx check: Block phone numbers and emails
     const contentCheck = checkContent(title, body);
     if (contentCheck.blocked) {
       return res.status(400).json({
@@ -92,10 +127,10 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = store.findById('users', req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const post = await Post.create({
+    const postObj = makePost({
       title: title.trim(),
       body: body.trim(),
       type: type || 'vent',
@@ -105,13 +140,11 @@ router.post('/', auth, async (req, res) => {
       innieHandle: user.innieHandle
     });
 
-    // When a user shares a hired post, automatically update their status to Reintegrated
-    if (type === 'hired') {
-      await User.findByIdAndUpdate(req.user.id, { status: 'Reintegrated' });
-    }
+    const post = store.insert('posts', postObj);
 
-    await post.populate('floor', 'name slug');
-    await post.populate('author', 'username headline status');
+    if (type === 'hired') {
+      store.update('users', req.user.id, { status: 'Reintegrated' });
+    }
 
     res.status(201).json({ post: sanitizePost(post, req.user.id) });
   } catch (error) {
@@ -119,14 +152,13 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// GET /api/posts/:id - Single post details
-router.get('/:id', async (req, res) => {
+// GET /api/posts/:id - Single post view
+router.get('/:id', (req, res) => {
   try {
-    const post = await Post.findById(req.params.id)
-      .populate('floor', 'name slug')
-      .populate('author', 'username headline status');
-
-    if (!post || post.hidden) return res.status(404).json({ error: 'Post not found' });
+    const post = store.findById('posts', req.params.id);
+    if (!post || post.hidden) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
 
     const currentUserId = getUserIdFromHeader(req);
     res.json({ post: sanitizePost(post, currentUserId) });
@@ -135,56 +167,54 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/posts/:id/vote - Cast, switch, or remove upvote/downvote
-router.post('/:id/vote', auth, async (req, res) => {
+// POST /api/posts/:id/vote - Upvote or downvote post
+router.post('/:id/vote', auth, (req, res) => {
   try {
     const { value } = req.body; // 1 or -1
-    const post = await Post.findById(req.params.id);
+    const post = store.findById('posts', req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
-    const userId = req.user.id;
-    const isUp = post.upvotes.some((id) => id.toString() === userId);
-    const isDown = post.downvotes.some((id) => id.toString() === userId);
+    const userId = req.user.id.toString();
+    let upvotes = (post.upvotes || []).map((id) => id.toString());
+    let downvotes = (post.downvotes || []).map((id) => id.toString());
 
     if (value === 1) {
-      if (isUp) {
-        post.upvotes = post.upvotes.filter((id) => id.toString() !== userId);
+      if (upvotes.includes(userId)) {
+        upvotes = upvotes.filter((id) => id !== userId);
       } else {
-        post.upvotes.push(userId);
-        post.downvotes = post.downvotes.filter((id) => id.toString() !== userId);
+        upvotes.push(userId);
+        downvotes = downvotes.filter((id) => id !== userId);
       }
     } else if (value === -1) {
-      if (isDown) {
-        post.downvotes = post.downvotes.filter((id) => id.toString() !== userId);
+      if (downvotes.includes(userId)) {
+        downvotes = downvotes.filter((id) => id !== userId);
       } else {
-        post.downvotes.push(userId);
-        post.upvotes = post.upvotes.filter((id) => id.toString() !== userId);
+        downvotes.push(userId);
+        upvotes = upvotes.filter((id) => id !== userId);
       }
     }
 
-    await post.save();
-    const upCount = post.upvotes.length;
-    const downCount = post.downvotes.length;
-    const score = upCount - downCount;
-    const userVote = post.upvotes.some((id) => id.toString() === userId) ? 1 : post.downvotes.some((id) => id.toString() === userId) ? -1 : 0;
+    store.update('posts', post._id, { upvotes, downvotes });
+    const score = upvotes.length - downvotes.length;
+    const myVote = upvotes.includes(userId) ? 1 : downvotes.includes(userId) ? -1 : 0;
 
-    res.json({ score, userVote });
+    res.json({ score, myVote, userVote: myVote });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error voting on post' });
   }
 });
 
-// DELETE /api/posts/:id - Delete post (author only)
-router.delete('/:id', auth, async (req, res) => {
+// DELETE /api/posts/:id - Delete own post
+router.delete('/:id', auth, (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = store.findById('posts', req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
-    if (post.author.toString() !== req.user.id) {
+    if (post.author.toString() !== req.user.id.toString()) {
       return res.status(403).json({ error: 'You can only delete your own posts' });
     }
 
-    await post.deleteOne();
+    store.remove('posts', req.params.id);
     res.json({ message: 'Post deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error deleting post' });
@@ -192,4 +222,3 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 module.exports = router;
-

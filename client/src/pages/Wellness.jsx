@@ -1,3 +1,5 @@
+import AsciiArt from '../components/AsciiArt';
+
 // Wellness Session page offering resources, empathy, and assistance links
 export default function Wellness() {
   const resources = [
@@ -10,9 +12,15 @@ export default function Wellness() {
   return (
     <div className="space-y-6 max-w-2xl font-mono text-xs">
       <div className="p-6 border space-y-4" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '2px' }}>
-        <h1 className="text-sm font-bold uppercase tracking-widest">
-          WELLNESS SESSION
-        </h1>
+        <div className="flex flex-col items-center justify-center text-center space-y-2 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
+          <AsciiArt piece="candle-flame" size={12} still={false} tone="text" />
+          <h1 className="text-sm font-bold uppercase tracking-widest">
+            WELLNESS SESSION
+          </h1>
+          <p className="italic text-[11px]" style={{ color: 'var(--muted)' }}>
+            "Please try to enjoy all facts equally."
+          </p>
+        </div>
 
         <div className="p-3 border font-sans text-xs leading-relaxed" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}>
           <p className="font-semibold mb-1" style={{ color: 'var(--text)' }}>

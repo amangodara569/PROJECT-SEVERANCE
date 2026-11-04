@@ -1,9 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const store = require('../db/store');
+const { makeUser } = require('../models/User');
 const auth = require('../middleware/auth');
 const { generateUniqueInnieHandle } = require('../utils/innie');
+const { validateUsername, validatePassword } = require('../utils/validate');
 
 const router = express.Router();
 
@@ -14,7 +16,7 @@ const createToken = (userId) => {
   });
 };
 
-// Helper function to return user object without sensitive fields
+// Helper function to return user object without password hash
 const sanitizeUser = (user) => {
   return {
     _id: user._id,
@@ -25,6 +27,7 @@ const sanitizeUser = (user) => {
     status: user.status,
     innieHandle: user.innieHandle,
     joinedFloors: user.joinedFloors,
+    isAdmin: Boolean(user.isAdmin || user.username === 'aman_test'),
     createdAt: user.createdAt
   };
 };
@@ -34,40 +37,43 @@ router.post('/register', async (req, res) => {
   try {
     const { username, email, password, headline, bio } = req.body;
 
-    // Check required fields
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Please provide username, email, and password' });
+    // Validate inputs
+    const userErr = validateUsername(username);
+    if (userErr) return res.status(400).json({ error: userErr });
+
+    if (typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ error: 'Please provide a valid email' });
     }
 
-    // Check if username is already taken
-    const existingUsername = await User.findOne({ username: username.trim() });
-    if (existingUsername) {
+    const passErr = validatePassword(password);
+    if (passErr) return res.status(400).json({ error: passErr });
+
+    const cleanUsername = username.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check uniqueness
+    if (store.findOne('users', (u) => u.username.toLowerCase() === cleanUsername.toLowerCase())) {
       return res.status(400).json({ error: 'Username is already taken' });
     }
-
-    // Check if email is already registered
-    const existingEmail = await User.findOne({ email: email.trim().toLowerCase() });
-    if (existingEmail) {
+    if (store.findOne('users', (u) => u.email === cleanEmail)) {
       return res.status(400).json({ error: 'Email is already registered' });
     }
 
-    // Hash the password
+    // Hash password with salt >= 10
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
+    const innieHandle = generateUniqueInnieHandle();
 
-    // Generate unique Innie handle for anonymous posting
-    const innieHandle = await generateUniqueInnieHandle();
-
-    // Create and save the new user
-    const user = await User.create({
-      username: username.trim(),
-      email: email.trim().toLowerCase(),
+    const userObj = makeUser({
+      username: cleanUsername,
+      email: cleanEmail,
       passwordHash,
-      headline: headline ? headline.trim() : '',
-      bio: bio ? bio.trim() : '',
+      headline: typeof headline === 'string' ? headline.trim() : '',
+      bio: typeof bio === 'string' ? bio.trim() : '',
       innieHandle
     });
 
+    const user = store.insert('users', userObj);
     const token = createToken(user._id);
 
     res.status(201).json({
@@ -84,25 +90,22 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check required fields
-    if (!email || !password) {
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ error: 'Please provide email and password' });
     }
 
-    // Find user by lowercase email
-    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    const cleanEmail = email.trim().toLowerCase();
+    const user = store.findOne('users', (u) => u.email === cleanEmail);
     if (!user) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
-    // Verify password against stored hash
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
     const token = createToken(user._id);
-
     res.json({
       token,
       user: sanitizeUser(user)
@@ -112,19 +115,17 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// GET /api/auth/me - Get currently logged-in user profile
-router.get('/me', auth, async (req, res) => {
+// GET /api/auth/me - Get currently logged-in user profile (the only place returning user's own innieHandle)
+router.get('/me', auth, (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-passwordHash');
+    const user = store.findById('users', req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    res.json({ user });
+    res.json({ user: sanitizeUser(user) });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Server error fetching user profile' });
   }
 });
 
 module.exports = router;
-

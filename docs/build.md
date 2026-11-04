@@ -21,6 +21,7 @@ Severance touch: the whole app has an **Innie / Outie** switch (anonymous vs rea
 ## 2. Stack and rules
 
 - **M**ongoDB + Mongoose, **E**xpress, **R**eact (Vite), **N**ode
+- Data: JSON file store for now (server/db/store.js, server/data/). MongoDB Atlas comes back at Step 17.
 - Tailwind CSS, React Router, axios
 - Auth: JWT + bcryptjs (basic only)
 - Phase 2 only: socket.io
@@ -30,18 +31,21 @@ Severance touch: the whole app has an **Innie / Outie** switch (anonymous vs rea
 
 ## 3. Folder structure
 
+Data: JSON file store for now (server/db/store.js, server/data/). MongoDB Atlas comes back at Step 17.
+
 ```
 linked-out/
   docs/                  build.md, design.md, interface.md
   server/
-    server.js            starts Express, connects DB, mounts routes
-    config/db.js         MongoDB connection
+    server.js            starts Express, mounts routes
+    db/store.js          JSON file database store
+    data/                seed.json, db.json
     models/              User, Post, Comment, Floor, Layoff, Job, Report
     routes/              auth, posts, comments, floors, layoffs, jobs, reports, users
     middleware/auth.js   checks JWT, sets req.user
     utils/innie.js       makes the random Innie handle
     utils/checkPost.js   blocks phone numbers and emails in posts
-    .env                 MONGO_URI, JWT_SECRET, PORT
+    .env                 JWT_SECRET, PORT, CLIENT_URL
   client/
     src/
       main.jsx, App.jsx  entry and routes
@@ -129,7 +133,12 @@ After each step: run it, test it, then move on. Do not skip ahead.
 | 9 | Job model, Comeback page, "I got hired" post, Waffle Party screen | Hired post shows the Waffle Party |
 | 10 | Profile page (Outie view and Innie view), status labels | Profile shows headline and status |
 | 11 | Handbook and Wellness pages, empty states, 404 text | All text pages exist |
-| 12 | Phase 2, one at a time: Stories, Rooms (chat), Refinement game, follows | Only after steps 1 to 11 work |
+| 12 | Stabilize: JSON test-data store, login on, privacy check, hardening | No MongoDB needed, seed data fills app, privacy check passes |
+| 13 | Review tool: admin queue for reported posts | Admin can review and resolve flagged content |
+| 14 | Rooms (chat, socket.io) | Real-time group chat per Floor works |
+| 15 | Refinement game | Crowd-check layoff reports with number binning game |
+| 16 | Stories (optional, last) | 24h disappearing slide posts work |
+| 17 | Switch data layer to MongoDB Atlas (only server/db/store.js changes) | App works identically with Atlas connection |
 
 ## 7. Coding rules for the AI
 

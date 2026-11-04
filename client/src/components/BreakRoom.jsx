@@ -1,3 +1,5 @@
+import AsciiArt from './AsciiArt';
+
 // BreakRoom modal: displayed when a submission contains forbidden contact info
 export default function BreakRoom({ message, onClose }) {
   if (!message) return null;
@@ -13,6 +15,10 @@ export default function BreakRoom({ message, onClose }) {
           borderRadius: '2px'
         }}
       >
+        <div className="flex justify-center mb-1">
+          <AsciiArt piece="hourglass" size={10} still={false} tone="text" />
+        </div>
+
         <h2 className="text-sm font-bold tracking-widest uppercase">
           BREAK ROOM
         </h2>

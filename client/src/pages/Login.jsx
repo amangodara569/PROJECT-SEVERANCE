@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AsciiCustom from '../components/AsciiCustom';
+import linkedOutLogo from '../ascii/pieces/linked-out-logo';
 
 // Login page with centered card, Severance homage footer, and error display
 export default function Login() {
@@ -43,7 +45,10 @@ export default function Login() {
           borderRadius: '2px'
         }}
       >
-        <div className="mb-6 text-center">
+        <div className="mb-4 text-center">
+          <div className="flex justify-center mb-2">
+            <AsciiCustom make={linkedOutLogo} size={8} />
+          </div>
           <h1 className="text-xl font-bold tracking-widest uppercase">LINKED OUT</h1>
           <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
             Sign in to continue

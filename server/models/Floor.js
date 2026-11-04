@@ -1,39 +1,15 @@
-const mongoose = require('mongoose');
+// Factory function creating a plain Floor community object
+const makeFloor = (data = {}) => {
+  return {
+    name: data.name ? data.name.trim() : '',
+    slug: data.slug ? data.slug.trim().toLowerCase() : '',
+    description: data.description ? data.description.trim() : '',
+    members: data.members || [],
+    createdBy: data.createdBy || null,
+    createdAt: data.createdAt || new Date().toISOString()
+  };
+};
 
-// Floor schema representing company communities
-const floorSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Company name is required'],
-    unique: true,
-    trim: true
-  },
-  slug: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
-  description: {
-    type: String,
-    default: '',
-    trim: true
-  },
-  members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-module.exports = mongoose.model('Floor', floorSchema);
-
+module.exports = {
+  makeFloor
+};

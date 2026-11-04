@@ -1,37 +1,15 @@
-const mongoose = require('mongoose');
+// Factory function creating a plain Job listing object
+const makeJob = (data = {}) => {
+  return {
+    title: data.title ? data.title.trim() : '',
+    company: data.company ? data.company.trim() : '',
+    location: data.location ? data.location.trim() : 'Remote',
+    link: data.link ? data.link.trim() : '',
+    postedBy: data.postedBy || null,
+    createdAt: data.createdAt || new Date().toISOString()
+  };
+};
 
-// Job schema representing open roles shared with the severed community
-const jobSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Job title is required'],
-    trim: true
-  },
-  company: {
-    type: String,
-    required: [true, 'Company name is required'],
-    trim: true
-  },
-  location: {
-    type: String,
-    default: 'Remote',
-    trim: true
-  },
-  link: {
-    type: String,
-    required: [true, 'Application link is required'],
-    trim: true
-  },
-  postedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-module.exports = mongoose.model('Job', jobSchema);
-
+module.exports = {
+  makeJob
+};

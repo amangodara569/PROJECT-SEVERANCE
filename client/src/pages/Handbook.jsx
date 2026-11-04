@@ -27,8 +27,11 @@ export default function Handbook() {
             <li>Swearing and raw frustration about job loss.</li>
             <li>Dark humor and cynical reflections on corporate rituals.</li>
             <li>Harsh criticism of executive decisions and layoff strategies.</li>
-            <li>Speaking anonymously through your severed Innie persona.</li>
+            <li>Speaking pseudonymously through your severed Innie persona.</li>
           </ul>
+          <div className="p-3 border mt-2 font-mono text-[11px]" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}>
+            <strong>Innie Protocol:</strong> Innie hides your name from other users. It does not hide you from the platform. Never post details that identify you.
+          </div>
         </section>
 
         <section className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
@@ -50,6 +53,19 @@ export default function Handbook() {
             Posts flagged with personal phone numbers or emails are redirected to the Break Room to be edited. Any post or comment that receives 5 community reports is automatically hidden.
           </p>
         </section>
+
+        <footer className="pt-4 border-t text-[11px] font-mono text-center" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+          <span>ASCII art: </span>
+          <a
+            href="https://www.ascii-magic.com/ascii"
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:opacity-80"
+            style={{ color: 'var(--muted)' }}
+          >
+            ascii-magic.com (MIT)
+          </a>
+        </footer>
       </div>
     </div>
   );

@@ -1,59 +1,93 @@
 const express = require('express');
-const User = require('../models/User');
-const Post = require('../models/Post');
+const store = require('../db/store');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
 
 // GET /api/users/:username - Public Outie profile with non-anonymous posts
-router.get('/:username', async (req, res) => {
+router.get('/:username', (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username.trim() })
-      .select('-passwordHash -innieHandle'); // Strict privacy: do not link Outie to Innie handle
+    const targetUsername = req.params.username.trim().toLowerCase();
+    const user = store.findOne('users', (u) => u.username.toLowerCase() === targetUsername);
 
     if (!user) return res.status(404).json({ error: 'User profile not found' });
 
-    // Fetch user's non-anonymous posts only
-    const posts = await Post.find({
-      author: user._id,
-      isInnie: false,
-      hidden: { $ne: true }
-    })
-      .populate('floor', 'name slug')
-      .populate('author', 'username headline status')
-      .sort({ createdAt: -1 });
+    // Strict Privacy: Never return email, passwordHash, or innieHandle
+    const publicUser = {
+      _id: user._id,
+      username: user.username,
+      headline: user.headline || '',
+      status: user.status || 'Employed',
+      bio: user.bio || '',
+      createdAt: user.createdAt
+    };
 
-    const formattedPosts = posts.map((p) => {
-      const obj = p.toObject();
-      obj.score = (obj.upvotes?.length || 0) - (obj.downvotes?.length || 0);
-      return obj;
-    });
+    // Public post list: NEVER includes Innie posts per Part C rule
+    const posts = store.getAll('posts')
+      .filter((p) => p.author && p.author.toString() === user._id.toString() && !p.isInnie && !p.hidden)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map((p) => {
+        let floorData = null;
+        if (p.floor) {
+          const f = store.findById('floors', p.floor);
+          if (f) floorData = { _id: f._id, name: f.name, slug: f.slug };
+        }
+        return {
+          _id: p._id,
+          title: p.title,
+          body: p.body,
+          type: p.type,
+          floor: floorData,
+          isInnie: false,
+          commentCount: p.commentCount || 0,
+          reportCount: p.reportCount || 0,
+          score: (p.upvotes?.length || 0) - (p.downvotes?.length || 0),
+          author: {
+            _id: user._id,
+            username: user.username,
+            headline: user.headline || '',
+            status: user.status || 'Employed'
+          },
+          createdAt: p.createdAt
+        };
+      });
 
-    res.json({ user, posts: formattedPosts });
+    res.json({ user: publicUser, posts });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error fetching profile' });
   }
 });
 
 // PUT /api/users/profile - Update own Outie profile details
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', auth, (req, res) => {
   try {
     const { headline, bio, status } = req.body;
     const allowedStatuses = ['Employed', 'Severed', 'Reintegrated'];
 
     const updates = {};
-    if (headline !== undefined) updates.headline = headline.trim();
-    if (bio !== undefined) updates.bio = bio.trim();
+    if (typeof headline === 'string') updates.headline = headline.trim();
+    if (typeof bio === 'string') updates.bio = bio.trim();
     if (status && allowedStatuses.includes(status)) updates.status = status;
 
-    const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true })
-      .select('-passwordHash');
+    const updated = store.update('users', req.user.id, updates);
+    if (!updated) return res.status(404).json({ error: 'User not found' });
 
-    res.json({ user });
+    res.json({
+      user: {
+        _id: updated._id,
+        username: updated.username,
+        email: updated.email,
+        headline: updated.headline,
+        bio: updated.bio,
+        status: updated.status,
+        innieHandle: updated.innieHandle,
+        joinedFloors: updated.joinedFloors,
+        createdAt: updated.createdAt
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error updating profile' });
   }
 });
 
 module.exports = router;
-

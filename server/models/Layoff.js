@@ -1,44 +1,17 @@
-const mongoose = require('mongoose');
+// Factory function creating a plain Layoff report object
+const makeLayoff = (data = {}) => {
+  return {
+    company: data.company ? data.company.trim() : '',
+    date: data.date || new Date().toISOString(),
+    peopleAffected: Number(data.peopleAffected) || 0,
+    sourceUrl: data.sourceUrl ? data.sourceUrl.trim() : '',
+    note: data.note ? data.note.trim() : '',
+    addedBy: data.addedBy || null,
+    confirmedBy: data.confirmedBy || [],
+    createdAt: data.createdAt || new Date().toISOString()
+  };
+};
 
-// Layoff schema representing community-tracked corporate workforce reductions
-const layoffSchema = new mongoose.Schema({
-  company: {
-    type: String,
-    required: [true, 'Company name is required'],
-    trim: true
-  },
-  date: {
-    type: Date,
-    default: Date.now
-  },
-  peopleAffected: {
-    type: Number,
-    default: 0
-  },
-  sourceUrl: {
-    type: String,
-    default: '',
-    trim: true
-  },
-  note: {
-    type: String,
-    default: '',
-    trim: true
-  },
-  addedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  confirmedBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-module.exports = mongoose.model('Layoff', layoffSchema);
-
+module.exports = {
+  makeLayoff
+};

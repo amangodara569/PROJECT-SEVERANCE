@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import VoteButtons from './VoteButtons';
 import api from '../api/api';
+import AsciiCustom from './AsciiCustom';
+import innieGlyph from '../ascii/pieces/innie-glyph';
 
 // Formats timestamp into short relative format
 const timeAgo = (dateStr) => {
@@ -17,8 +19,8 @@ const timeAgo = (dateStr) => {
 // PostCard component with voting, comments link, report button, and author identity
 export default function PostCard({ post, onVote, onDelete }) {
   const [reported, setReported] = useState(false);
-  const isAnonymous = post.isInnie;
-  const authorDisplay = isAnonymous ? post.innieHandle : `@${post.author?.username || 'user'}`;
+  const isPseudonymous = post.isInnie;
+  const authorDisplay = isPseudonymous ? post.innieHandle : `@${post.author?.username || 'user'}`;
 
   // Report post to moderation
   const handleReport = async () => {
@@ -64,7 +66,14 @@ export default function PostCard({ post, onVote, onDelete }) {
             </>
           )}
 
-          <span>{authorDisplay}</span>
+          {isPseudonymous ? (
+            <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--text)' }}>
+              <AsciiCustom make={innieGlyph} options={{ handle: post.innieHandle }} size={5} still={true} tone="text" />
+              <span>{authorDisplay}</span>
+            </span>
+          ) : (
+            <span>{authorDisplay}</span>
+          )}
 
           {(post.type === 'hired' || post.author?.status === 'Reintegrated') && (
             <span className="px-1 border text-[9px] uppercase tracking-wider" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>

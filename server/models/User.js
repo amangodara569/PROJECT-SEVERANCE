@@ -1,54 +1,19 @@
-const mongoose = require('mongoose');
+// Factory function creating a plain User object with default fields
+const makeUser = (data = {}) => {
+  return {
+    username: data.username ? data.username.trim() : '',
+    email: data.email ? data.email.trim().toLowerCase() : '',
+    passwordHash: data.passwordHash || '',
+    headline: data.headline ? data.headline.trim() : '',
+    bio: data.bio ? data.bio.trim() : '',
+    status: data.status || 'Employed',
+    innieHandle: data.innieHandle || '',
+    joinedFloors: data.joinedFloors || [],
+    isAdmin: Boolean(data.isAdmin),
+    createdAt: data.createdAt || new Date().toISOString()
+  };
+};
 
-// User schema representing accounts in Linked Out
-// Holds Outie profile details and the anonymous Innie persona handle
-const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: [true, 'Username is required'],
-    unique: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
-  passwordHash: {
-    type: String,
-    required: [true, 'Password is required']
-  },
-  headline: {
-    type: String,
-    default: '',
-    trim: true
-  },
-  bio: {
-    type: String,
-    default: '',
-    trim: true
-  },
-  status: {
-    type: String,
-    enum: ['Employed', 'Severed', 'Reintegrated'],
-    default: 'Employed'
-  },
-  innieHandle: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  joinedFloors: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Floor'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-module.exports = mongoose.model('User', userSchema);
-
+module.exports = {
+  makeUser
+};

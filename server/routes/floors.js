@@ -1,6 +1,7 @@
 const express = require('express');
-const Floor = require('../models/Floor');
-const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const store = require('../db/store');
+const { makeFloor } = require('../models/Floor');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -14,99 +15,138 @@ const makeSlug = (text) => {
     .replace(/(^-|-$)/g, '');
 };
 
+// Optional token extractor
+const getUserIdFromHeader = (req) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+      return decoded.id;
+    }
+  } catch (e) {}
+  return null;
+};
+
+// Formats floor object for privacy: returns memberCount and isMember, never member IDs
+const sanitizeFloor = (floor, currentUserId = null) => {
+  const members = floor.members || [];
+  const isMember = currentUserId ? members.some((m) => m.toString() === currentUserId.toString()) : false;
+  return {
+    _id: floor._id,
+    name: floor.name,
+    slug: floor.slug,
+    description: floor.description || '',
+    memberCount: members.length,
+    isMember,
+    createdAt: floor.createdAt
+  };
+};
+
 // GET /api/floors - List all company floors (with optional search filter)
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
   try {
     const { q } = req.query;
-    const filter = q ? { name: { $regex: q.trim(), $options: 'i' } } : {};
-    const floors = await Floor.find(filter).sort({ createdAt: -1 });
+    let floors = store.getAll('floors');
+    if (q) {
+      const lower = q.trim().toLowerCase();
+      floors = floors.filter((f) => f.name.toLowerCase().includes(lower));
+    }
 
-    res.json({ floors });
+    const currentUserId = getUserIdFromHeader(req);
+    const sanitized = floors
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map((f) => sanitizeFloor(f, currentUserId));
+
+    res.json({ floors: sanitized });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error fetching floors' });
   }
 });
 
 // POST /api/floors - Create a new company floor
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, (req, res) => {
   try {
     const { name, description } = req.body;
 
-    if (!name || !name.trim()) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'Company name is required' });
     }
 
     const slug = makeSlug(name);
+    const cleanName = name.trim();
 
-    // Check if floor with same name or slug exists
-    const existing = await Floor.findOne({
-      $or: [
-        { name: { $regex: `^${name.trim()}$`, $options: 'i' } },
-        { slug }
-      ]
-    });
-
+    // Check if floor exists
+    const existing = store.findOne('floors', (f) => f.name.toLowerCase() === cleanName.toLowerCase() || f.slug === slug);
     if (existing) {
       return res.status(400).json({ error: 'A floor for this company already exists' });
     }
 
-    // Create floor with creator automatically joined as first member
-    const floor = await Floor.create({
-      name: name.trim(),
+    const floorObj = makeFloor({
+      name: cleanName,
       slug,
-      description: description ? description.trim() : '',
+      description: typeof description === 'string' ? description.trim() : '',
       members: [req.user.id],
       createdBy: req.user.id
     });
 
-    // Add floor to creator's joinedFloors
-    await User.findByIdAndUpdate(req.user.id, {
-      $addToSet: { joinedFloors: floor._id }
-    });
+    const floor = store.insert('floors', floorObj);
 
-    res.status(201).json({ floor });
+    // Update creator's joinedFloors
+    const user = store.findById('users', req.user.id);
+    if (user) {
+      const joined = user.joinedFloors || [];
+      if (!joined.includes(floor._id)) {
+        store.update('users', req.user.id, { joinedFloors: [...joined, floor._id] });
+      }
+    }
+
+    res.status(201).json({ floor: sanitizeFloor(floor, req.user.id) });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error creating floor' });
   }
 });
 
 // GET /api/floors/:slug - Get a single floor by slug
-router.get('/:slug', async (req, res) => {
+router.get('/:slug', (req, res) => {
   try {
-    const floor = await Floor.findOne({ slug: req.params.slug.toLowerCase() });
+    const floor = store.findOne('floors', (f) => f.slug === req.params.slug.toLowerCase());
     if (!floor) {
       return res.status(404).json({ error: 'This floor does not exist' });
     }
 
-    res.json({ floor });
+    const currentUserId = getUserIdFromHeader(req);
+    res.json({ floor: sanitizeFloor(floor, currentUserId) });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error fetching floor' });
   }
 });
 
 // POST /api/floors/:slug/join - Join or leave a company floor
-router.post('/:slug/join', auth, async (req, res) => {
+router.post('/:slug/join', auth, (req, res) => {
   try {
-    const floor = await Floor.findOne({ slug: req.params.slug.toLowerCase() });
+    const floor = store.findOne('floors', (f) => f.slug === req.params.slug.toLowerCase());
     if (!floor) {
       return res.status(404).json({ error: 'This floor does not exist' });
     }
 
     const userId = req.user.id;
-    const isMember = floor.members.some((m) => m.toString() === userId);
+    let members = floor.members || [];
+    const isMember = members.some((m) => m.toString() === userId.toString());
+    const user = store.findById('users', userId);
+    let joinedFloors = user?.joinedFloors || [];
 
     if (isMember) {
-      // Leave floor
-      floor.members = floor.members.filter((m) => m.toString() !== userId);
-      await floor.save();
-      await User.findByIdAndUpdate(userId, { $pull: { joinedFloors: floor._id } });
-      return res.json({ joined: false, memberCount: floor.members.length });
+      members = members.filter((m) => m.toString() !== userId.toString());
+      joinedFloors = joinedFloors.filter((id) => id.toString() !== floor._id.toString());
+      store.update('floors', floor._id, { members });
+      if (user) store.update('users', userId, { joinedFloors });
+      return res.json({ joined: false, memberCount: members.length });
     } else {
-      // Join floor
-      floor.members.push(userId);
-      await floor.save();
-      await User.findByIdAndUpdate(userId, { $addToSet: { joinedFloors: floor._id } });
-      return res.json({ joined: true, memberCount: floor.members.length });
+      members.push(userId);
+      if (!joinedFloors.includes(floor._id)) joinedFloors.push(floor._id);
+      store.update('floors', floor._id, { members });
+      if (user) store.update('users', userId, { joinedFloors });
+      return res.json({ joined: true, memberCount: members.length });
     }
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error toggling floor membership' });
@@ -114,4 +154,3 @@ router.post('/:slug/join', auth, async (req, res) => {
 });
 
 module.exports = router;
-

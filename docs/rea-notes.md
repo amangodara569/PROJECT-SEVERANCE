@@ -22,3 +22,9 @@
 ## Jobs & Comeback — LinkedIn — Step 9
 - LinkedIn Jobs: Direct external application links, location tags, role title.
 - Adaptation: Community-posted job listings combined with "Reintegrated" celebration posts.
+
+## Review Queue (ModQueue) — Reddit — Step 13
+- Reddit ModQueue: Aggregates reported items exceeding report thresholds into an audit queue.
+- Items display report counts, reasons list, and contextual content snippet.
+- Resolution actions: "Approve" (dismisses reports, unhides content) vs "Remove" (confirms removal/hides permanently).
+- Adaptation: Linked Out Admin Review Queue (/review) with "Dismiss Reports" (restores post) and "Delete Post" (removes from feed).

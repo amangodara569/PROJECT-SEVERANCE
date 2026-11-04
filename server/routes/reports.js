@@ -1,13 +1,12 @@
 const express = require('express');
-const Report = require('../models/Report');
-const Post = require('../models/Post');
-const Comment = require('../models/Comment');
+const store = require('../db/store');
+const { makeReport } = require('../models/Report');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
 
 // POST /api/reports - Report a post or comment with auto-hide at 5 reports
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, (req, res) => {
   try {
     const { targetType, targetId, reason } = req.body;
 
@@ -19,30 +18,34 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid targetType' });
     }
 
-    // Check if user has already reported this item
-    const existing = await Report.findOne({ targetId, reporter: req.user.id });
+    const tid = targetId.toString();
+    const uid = req.user.id.toString();
+
+    // Check if user already reported this item
+    const existing = store.findOne('reports', (r) => r.targetId.toString() === tid && r.reporter.toString() === uid);
     if (existing) {
       return res.status(400).json({ error: 'You have already reported this item' });
     }
 
-    // Save report
-    await Report.create({
+    const reportObj = makeReport({
       targetType,
-      targetId,
-      reporter: req.user.id,
-      reason: reason || 'Community guidelines violation'
+      targetId: tid,
+      reporter: uid,
+      reason: typeof reason === 'string' && reason.trim() ? reason.trim() : 'Community guidelines violation'
     });
 
-    // Increment target report count and auto-hide if threshold of 5 is met
-    const Model = targetType === 'post' ? Post : Comment;
-    const target = await Model.findById(targetId);
+    store.insert('reports', reportObj);
 
+    // Increment target reportCount and auto-hide if threshold of 5 is met
+    const collectionName = targetType === 'post' ? 'posts' : 'comments';
+    const target = store.findById(collectionName, tid);
     if (target) {
-      target.reportCount = (target.reportCount || 0) + 1;
-      if (target.reportCount >= 5) {
-        target.hidden = true;
+      const count = (target.reportCount || 0) + 1;
+      const changes = { reportCount: count };
+      if (count >= 5) {
+        changes.hidden = true;
       }
-      await target.save();
+      store.update(collectionName, tid, changes);
     }
 
     res.status(201).json({
@@ -55,4 +58,3 @@ router.post('/', auth, async (req, res) => {
 });
 
 module.exports = router;
-

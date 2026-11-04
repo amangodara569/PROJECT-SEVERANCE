@@ -3,38 +3,31 @@ import api from '../api/api';
 
 const AuthContext = createContext(null);
 
-// Default preview user to explore the full UI without a MongoDB login
-const DEMO_USER = {
-  _id: 'preview_123',
-  username: 'mark_s',
-  email: 'mark@lumon.com',
-  headline: 'Macrodata Refinement Chief',
+// Temporary preview user and valid token so user can browse the UI without logging in
+const PREVIEW_USER = {
+  _id: '88157f86-5db6-4dbe-8763-9ca9c3e92cb1',
+  username: 'aman_test',
+  email: 'aman@lumon.com',
+  headline: 'Lead System Architect at TechNova',
+  bio: 'Building distributed platforms. Pragmatic engineer.',
   status: 'Employed',
-  innieHandle: 'Innie-4821',
+  innieHandle: 'Innie-1001',
+  isAdmin: true,
   joinedFloors: []
 };
+const PREVIEW_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg4MTU3Zjg2LTVkYjYtNGRiZS04NzYzLTljYTljM2U5MmNiMSIsImlhdCI6MTc5MzYzMDEyOSwiZXhwIjoxNzk2MjIyMTI5fQ.R_87D9W5A8rCkZga8_WAJonLxVVA3nolEk4WjNU48c0';
 
-// AuthProvider component to manage session state with preview support
+// AuthProvider manages user authentication state
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(DEMO_USER);
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  // Login bypassed for UI preview
+  const [user, setUser] = useState(() => PREVIEW_USER);
+  const [token, setToken] = useState(() => localStorage.getItem('token') || PREVIEW_TOKEN);
   const [loading, setLoading] = useState(false);
 
-  // Attempt to load current user from /api/auth/me if a real token exists
   useEffect(() => {
-    const loadUser = async () => {
-      const savedToken = localStorage.getItem('token');
-      if (!savedToken) return;
-
-      try {
-        const response = await api.get('/auth/me');
-        setUser(response.data.user);
-      } catch (error) {
-        console.error('Session check failed, keeping preview user:', error.message);
-      }
-    };
-
-    loadUser();
+    if (!localStorage.getItem('token')) {
+      localStorage.setItem('token', PREVIEW_TOKEN);
+    }
   }, []);
 
   // Register a new user and store the returned token
@@ -57,11 +50,11 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  // Clear session data
+  // Clear session data and log out
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
-    setUser(DEMO_USER); // Revert to preview user
+    setUser(null);
   };
 
   return (
