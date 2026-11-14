@@ -8,12 +8,16 @@ export const ModeProvider = ({ children }) => {
     return localStorage.getItem('mode') || 'outie';
   });
 
-  // Apply or remove the .innie class on <html> whenever mode changes
+  // Apply or remove the .innie class and .dark class on <html> whenever mode changes
   useEffect(() => {
     if (mode === 'innie') {
       document.documentElement.classList.add('innie');
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
     } else {
       document.documentElement.classList.remove('innie');
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
     localStorage.setItem('mode', mode);
   }, [mode]);
@@ -40,4 +44,3 @@ export const useMode = () => {
   }
   return context;
 };
-

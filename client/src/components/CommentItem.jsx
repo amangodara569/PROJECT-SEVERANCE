@@ -5,8 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
 import AsciiCustom from './AsciiCustom';
 import innieGlyph from '../ascii/pieces/innie-glyph';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
-// Formats timestamp into relative format
 const timeAgo = (dateStr) => {
   const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
   if (seconds < 60) return 'just now';
@@ -17,7 +19,6 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(hours / 24)}d ago`;
 };
 
-// CommentItem: renders single comment with voting, reply, report, and nested replies
 export default function CommentItem({ comment, replies = [], onVote, onAddReply }) {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -28,7 +29,6 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
   const { user } = useAuth();
   const authorDisplay = comment.isInnie ? comment.innieHandle : `@${comment.author?.username || 'user'}`;
 
-  // Submit a reply to this comment
   const handleReplySubmit = async (e) => {
     e.preventDefault();
     if (!replyText.trim()) return;
@@ -42,7 +42,6 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
     }
   };
 
-  // Report comment to moderation
   const handleReport = async () => {
     if (reported) return;
     try {
@@ -55,15 +54,8 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
   };
 
   return (
-    <div className="space-y-3 font-mono text-xs">
-      <div
-        className="p-3 border flex gap-3"
-        style={{
-          backgroundColor: 'var(--surface)',
-          borderColor: 'var(--border)',
-          borderRadius: '2px'
-        }}
-      >
+    <div className="space-y-2.5 font-mono text-xs">
+      <Card className="p-3.5 flex gap-3 transition-colors">
         <VoteButtons
           score={comment.score}
           userVote={comment.userVote}
@@ -71,14 +63,14 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
         />
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-[11px] mb-1" style={{ color: 'var(--muted)' }}>
+          <div className="flex items-center gap-2 text-[11px] mb-1.5 text-[var(--muted)]">
             {comment.isInnie ? (
-              <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--text)' }}>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--text)]">
                 <AsciiCustom make={innieGlyph} options={{ handle: comment.innieHandle }} size={5} still={true} tone="text" />
                 <span>{authorDisplay}</span>
               </span>
             ) : (
-              <span className="font-semibold" style={{ color: 'var(--text)' }}>
+              <span className="font-semibold text-[var(--text)]">
                 {authorDisplay}
               </span>
             )}
@@ -86,70 +78,69 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
             <span>{timeAgo(comment.createdAt)}</span>
           </div>
 
-          <p className="text-xs font-sans leading-relaxed mb-2" style={{ color: 'var(--text)' }}>
+          <p className="text-xs leading-relaxed mb-2 text-[var(--text)] font-sans">
             {comment.body}
           </p>
 
-          <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--muted)' }}>
-            <button
+          <div className="flex items-center gap-2 text-[11px]">
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={() => setShowReplyBox(!showReplyBox)}
-              className="hover:underline bg-transparent border-none p-0 cursor-pointer"
-              style={{ color: 'var(--muted)' }}
+              className="text-[11px]"
             >
-              [ Reply ]
-            </button>
+              Reply
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={handleReport}
-              className="hover:underline bg-transparent border-none p-0 cursor-pointer"
-              style={{ color: reported ? 'var(--text)' : 'var(--muted)' }}
+              className="text-[11px]"
             >
-              [ {reported ? 'Reported' : 'Report'} ]
-            </button>
+              {reported ? '✓ Reported' : 'Report'}
+            </Button>
           </div>
 
           {showReplyBox && (
-            <form onSubmit={handleReplySubmit} className="mt-3 pt-2 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
-              <textarea
-                required
-                placeholder={`Replying as ${isInnie ? user?.innieHandle : `@${user?.username}`}...`}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="w-full p-2 text-xs border outline-none bg-transparent font-sans h-16"
-                style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-              />
+            <form onSubmit={handleReplySubmit} className="mt-3 pt-2.5 border-t border-[var(--border)] space-y-2">
+              <div>
+                <Textarea
+                  required
+                  rows={3}
+                  placeholder={`Replying as ${isInnie ? user?.innieHandle : `@${user?.username}`}...`}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
               <div className="flex justify-end gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
                   onClick={() => setShowReplyBox(false)}
-                  className="px-2 py-1 text-[11px] border bg-transparent"
-                  style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-3 py-1 text-[11px] font-semibold"
-                  style={{ backgroundColor: 'var(--text)', color: 'var(--bg)' }}
+                  variant="default"
+                  size="xs"
                 >
                   {isSubmitting ? 'Posting...' : 'Reply'}
-                </button>
+                </Button>
               </div>
-              {isInnie && (
-                <p className="font-mono text-[10px] leading-relaxed pt-1" style={{ color: 'var(--muted)' }}>
-                  Innie hides your name from other users. It does not hide you from the platform. Never post details that identify you.
-                </p>
-              )}
             </form>
           )}
         </div>
-      </div>
+      </Card>
 
       {replies.length > 0 && (
-        <div className="ml-6 pl-3 border-l space-y-2" style={{ borderColor: 'var(--border)' }}>
+        <div className={`ml-6 pl-3 border-l space-y-2 border-[var(--border)]`}>
           {replies.map((reply) => (
             <CommentItem
               key={reply._id}

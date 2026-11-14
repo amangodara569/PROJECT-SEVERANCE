@@ -16,7 +16,6 @@ const createToken = (userId) => {
   });
 };
 
-// Helper function to return user object without password hash
 const sanitizeUser = (user) => {
   return {
     _id: user._id,
@@ -37,7 +36,6 @@ router.post('/register', async (req, res) => {
   try {
     const { username, email, password, headline, bio } = req.body;
 
-    // Validate inputs
     const userErr = validateUsername(username);
     if (userErr) return res.status(400).json({ error: userErr });
 
@@ -51,7 +49,6 @@ router.post('/register', async (req, res) => {
     const cleanUsername = username.trim();
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check uniqueness
     if (store.findOne('users', (u) => u.username.toLowerCase() === cleanUsername.toLowerCase())) {
       return res.status(400).json({ error: 'Username is already taken' });
     }

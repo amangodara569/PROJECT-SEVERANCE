@@ -26,7 +26,8 @@ Severance touch: the whole app has an **Innie / Outie** switch (anonymous vs rea
 - Auth: JWT + bcryptjs (basic only)
 - Phase 2 only: socket.io
 - Plain JavaScript. No TypeScript.
-- Not now: security hardening, caching, rate limits, tests, deployment. We will do these later.
+- Steps 18 to 21 (docs/scale.md) add rate limiting v2, caching, circuit breaker, Redis, logging, gateway, Docker and deployment.
+- Allowed scale libraries: pino, pino-http, compression, ioredis, rate-limit-redis, opossum, lru-cache, autocannon (dev only). Client: @fontsource/ibm-plex-mono, @fontsource/inter.
 - No new libraries unless asked.
 
 ## 3. Folder structure
@@ -41,7 +42,15 @@ linked-out/
     db/store.js          JSON file database store
     data/                seed.json, db.json
     models/              User, Post, Comment, Floor, Layoff, Job, Report
-    routes/              auth, posts, comments, floors, layoffs, jobs, reports, users
+    routes/              auth, posts, comments, floors, layoffs, jobs, reports, users, admin
+    cache/               cache.js (in-memory / Redis)
+    config/              env.js, limits.js
+    utils/logger.js      structured pino logger
+    utils/breaker.js     opossum circuit breaker
+  gateway/               nginx.conf
+  docker-compose.yml     multi-container orchestration
+  Dockerfiles            server/Dockerfile, client/Dockerfile
+  .github/workflows/     ci.yml
     middleware/auth.js   checks JWT, sets req.user
     utils/innie.js       makes the random Innie handle
     utils/checkPost.js   blocks phone numbers and emails in posts
@@ -139,6 +148,10 @@ After each step: run it, test it, then move on. Do not skip ahead.
 | 15 | Refinement game | Crowd-check layoff reports with number binning game |
 | 16 | Stories (optional, last) | 24h disappearing slide posts work |
 | 17 | Switch data layer to MongoDB Atlas (only server/db/store.js changes) | App works identically with Atlas connection |
+| 18 | App speed and resilience: indexes, pagination, votes collection, rate limits v2, cache, circuit breaker, logging | Speed test p95 under 150ms cached, rate limits and circuit breaker working |
+| 19 | Privacy and auth hardening: Innie author protection, cookie auth, account deletion | Innie author keys, httpOnly cookie, account delete |
+| 20 | Gateway, load balancing, Docker, CI (local) | Docker compose with gateway and 2 API instances running |
+| 21 | Deploy and observe | Deploy runbook, health & ready checks, observation config |
 
 ## 7. Coding rules for the AI
 

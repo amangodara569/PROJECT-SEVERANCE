@@ -31,6 +31,8 @@ Cold, quiet, corporate, a little unsettling. Think old office terminal. Black an
 
 ## 2. Layout
 
+Replaced by docs/layout.md.
+
 **Desktop (width 900px and up):** three columns.
 
 ```
@@ -172,3 +174,4 @@ When the toggle is clicked: the page colors transition over 300ms. Nothing else.
 - **Stories:** a horizontal row of square cards at the top of Home. Tapping opens a full-screen slide viewer with progress bars at the top.
 - **Rooms:** two panes, room list on the left, messages on the right, input at the bottom. Mobile: list then chat.
 - **Refinement:** full-screen grid of small monospace numbers drifting slightly. Bins at the bottom labeled with plain words. Quiet, no score popups.
+

@@ -1,49 +1,43 @@
 import { useMode } from '../context/ModeContext';
 
-// SeverToggle allows switching between Outie and Innie modes
-// Inverts colors across the entire app by toggling the .innie CSS class
 export default function SeverToggle() {
-  const { mode, isInnie, toggleMode } = useMode();
+  const { isInnie, toggleMode } = useMode();
 
   return (
-    <div className="flex flex-col items-center">
-      {/* Two-part switch container */}
-      <div
-        className="flex items-center border font-mono text-xs overflow-hidden"
-        style={{ borderColor: 'var(--border)', borderRadius: '2px' }}
+    <div className="flex items-center gap-2 select-none">
+      <button
+        type="button"
+        onClick={toggleMode}
+        className={`flex items-center p-1 text-xs font-mono transition-all cursor-pointer border ${
+          isInnie
+            ? 'bg-[#ffffff] text-[#4a154b] border-[#e6e6e6] rounded-full shadow-sm'
+            : 'bg-[#181818] text-[#ffffff] border-[#2c2c2c] rounded-none'
+        }`}
+        title="Toggle Outie (Lamborghini) / Innie (Slack)"
       >
-        <button
-          type="button"
-          onClick={() => isInnie && toggleMode()}
-          className="px-2 py-1 tracking-wider uppercase border-none"
-          style={{
-            backgroundColor: !isInnie ? 'var(--text)' : 'transparent',
-            color: !isInnie ? 'var(--bg)' : 'var(--muted)',
-            borderRadius: 0
-          }}
+        <span
+          className={`px-3 py-1 font-bold text-xs uppercase tracking-wider transition-all ${
+            !isInnie
+              ? 'bg-[#FFC000] text-[#000000] font-black'
+              : 'text-[#696969] hover:text-[#1d1d1d]'
+          } ${isInnie ? 'rounded-full' : 'rounded-none'}`}
         >
-          OUTIE
-        </button>
-
-        <button
-          type="button"
-          onClick={() => !isInnie && toggleMode()}
-          className="px-2 py-1 tracking-wider uppercase border-none"
-          style={{
-            backgroundColor: isInnie ? 'var(--text)' : 'transparent',
-            color: isInnie ? 'var(--bg)' : 'var(--muted)',
-            borderRadius: 0
-          }}
+          ⚡ OUTIE
+        </span>
+        <span
+          className={`px-3 py-1 font-bold text-xs uppercase tracking-wider transition-all ${
+            isInnie
+              ? 'bg-[#4a154b] text-[#ffffff] font-bold shadow-xs'
+              : 'text-[#7D7D7D] hover:text-[#FFFFFF]'
+          } ${isInnie ? 'rounded-full' : 'rounded-none'}`}
         >
-          INNIE
-        </button>
-      </div>
+          # INNIE
+        </span>
+      </button>
 
-      {/* Status indicator under toggle */}
-      <span className="text-[10px] font-mono mt-0.5" style={{ color: 'var(--muted)' }}>
-        {isInnie ? 'You are Innie' : 'You are Outie'}
+      <span className="hidden sm:inline text-[10px] font-mono tracking-widest uppercase text-[var(--muted)]">
+        {isInnie ? 'SLACK MODE' : 'LAMBORGHINI'}
       </span>
     </div>
   );
 }
-

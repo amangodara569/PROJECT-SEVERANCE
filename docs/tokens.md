@@ -15,7 +15,7 @@ Goal: build fast and cheap. Follow every rule here in every session.
 - Create several files in one go when a step needs them.
 - Reuse existing components and helpers. Never create a second version of something that exists.
 - Keep comments to one short line. Beginner-friendly means clear code, not long essays in comments.
-- No extra files: no README, no summaries, no notes files except `docs/progress.md`, `docs/rea-notes.md` and `docs/test-guide.md`.
+- No extra files: no README, no summaries, no notes files except `docs/progress.md`, `docs/rea-notes.md`, `docs/test-guide.md`, `docs/scale.md`, `docs/perf.md` and `docs/deploy.md`.
 
 ## 3. Running and testing
 

@@ -3,18 +3,19 @@ const jwt = require('jsonwebtoken');
 const store = require('../db/store');
 const { makeLayoff } = require('../models/Layoff');
 const auth = require('../middleware/auth');
+const cache = require('../cache/cache');
+const env = require('../config/env');
 
 const router = express.Router();
 
-// Optional token extractor
 const getUserIdFromHeader = (req) => {
   try {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+      const decoded = jwt.verify(authHeader.split(' ')[1], env.JWT_SECRET);
       return decoded.id;
     }
-  } catch (e) {}
+  } catch {}
   return null;
 };
 
@@ -38,8 +39,8 @@ const sanitizeLayoff = (layoff, currentUserId = null, floorMap = {}) => {
   };
 };
 
-// GET /api/layoffs - List layoffs with optional company search and monthly sum
-router.get('/', (req, res) => {
+// GET /api/layoffs - List layoffs with optional company search and cached monthly total
+router.get('/', async (req, res) => {
   try {
     const { company } = req.query;
     let layoffs = store.getAll('layoffs');
@@ -58,18 +59,20 @@ router.get('/', (req, res) => {
       floorMap[f.name.toLowerCase()] = f.slug;
     });
 
-    // Calculate sum of people affected in the current calendar month
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
+    // Cached monthly severed count calculation
+    const severedThisMonth = await cache.wrap('stats:severed:month', 60, async () => {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
 
-    const severedThisMonth = store.getAll('layoffs').reduce((sum, item) => {
-      const d = new Date(item.date);
-      if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
-        return sum + (Number(item.peopleAffected) || 0);
-      }
-      return sum;
-    }, 0);
+      return store.getAll('layoffs').reduce((sum, item) => {
+        const d = new Date(item.date);
+        if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+          return sum + (Number(item.peopleAffected) || 0);
+        }
+        return sum;
+      }, 0);
+    });
 
     const formatted = layoffs
       .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -81,7 +84,7 @@ router.get('/', (req, res) => {
   }
 });
 
-// POST /api/layoffs - Submit a new workforce reduction report
+// POST /api/layoffs - Submit a new workforce reduction report and bust stats cache
 router.post('/', auth, (req, res) => {
   try {
     const { company, date, peopleAffected, sourceUrl, note } = req.body;
@@ -97,10 +100,12 @@ router.post('/', auth, (req, res) => {
       sourceUrl: typeof sourceUrl === 'string' ? sourceUrl.trim() : '',
       note: typeof note === 'string' ? note.trim() : '',
       addedBy: req.user.id,
-      confirmedBy: [req.user.id] // Submitter automatically confirms
+      confirmedBy: [req.user.id]
     });
 
     const layoff = store.insert('layoffs', layoffObj);
+    cache.del('stats:severed:month');
+
     res.status(201).json({ layoff: sanitizeLayoff(layoff, req.user.id) });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error creating layoff report' });

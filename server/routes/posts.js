@@ -5,26 +5,32 @@ const { makePost } = require('../models/Post');
 const auth = require('../middleware/auth');
 const { checkContent } = require('../utils/checkPost');
 const { validatePost } = require('../utils/validate');
+const cache = require('../cache/cache');
+const env = require('../config/env');
 
 const router = express.Router();
 
-// Helper to format post with populated floor/author and strict privacy rules
-const sanitizePost = (post, currentUserId = null) => {
-  const upCount = post.upvotes?.length || 0;
-  const downCount = post.downvotes?.length || 0;
-  const score = upCount - downCount;
+// Encodes next pagination cursor from item
+const encodeCursor = (item, sort) => {
+  if (!item) return null;
+  const payload = sort === 'top'
+    ? { score: item.score, id: item._id }
+    : { createdAt: item.createdAt, id: item._id };
+  return Buffer.from(JSON.stringify(payload)).toString('base64');
+};
 
-  let myVote = 0;
-  let isOwner = false;
-  if (currentUserId) {
-    const uid = currentUserId.toString();
-    const isUp = (post.upvotes || []).some((id) => id.toString() === uid);
-    const isDown = (post.downvotes || []).some((id) => id.toString() === uid);
-    myVote = isUp ? 1 : isDown ? -1 : 0;
-    isOwner = post.author && post.author.toString() === uid;
+// Decodes cursor from base64 string
+const decodeCursor = (cursorStr) => {
+  if (!cursorStr) return null;
+  try {
+    return JSON.parse(Buffer.from(cursorStr, 'base64').toString('utf8'));
+  } catch {
+    return null;
   }
+};
 
-  // Populate floor details
+// Sanitizes post for public delivery, strictly removing author identity on Innie posts
+const sanitizePostPublic = (post) => {
   let floorData = null;
   if (post.floor) {
     const f = store.findById('floors', post.floor);
@@ -47,14 +53,10 @@ const sanitizePost = (post, currentUserId = null) => {
     innieHandle: Boolean(post.isInnie) ? (innieHandle || 'Innie-0000') : null,
     commentCount: post.commentCount || 0,
     reportCount: post.reportCount || 0,
-    score,
-    myVote,
-    userVote: myVote,
-    isOwner,
+    score: typeof post.score === 'number' ? post.score : 0,
     createdAt: post.createdAt
   };
 
-  // Strict Privacy: Never return author (id, username, email) for Innie posts
   if (!post.isInnie && post.author) {
     const authorUser = store.findById('users', post.author);
     if (authorUser) {
@@ -70,47 +72,102 @@ const sanitizePost = (post, currentUserId = null) => {
   return result;
 };
 
-// Optional token extractor
+// Extracts user ID from authorization bearer header without failing unauthenticated requests
 const getUserIdFromHeader = (req) => {
   try {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+      const decoded = jwt.verify(authHeader.split(' ')[1], env.JWT_SECRET);
       return decoded.id;
     }
-  } catch (e) {}
+  } catch {}
   return null;
 };
 
-// GET /api/posts - Feed of posts with optional floor and sorting
-router.get('/', (req, res) => {
+// GET /api/posts - Feed with cursor pagination and shared public caching
+router.get('/', async (req, res) => {
   try {
-    const { floor, sort } = req.query;
-    let posts = store.getAll('posts').filter((p) => !p.hidden);
+    const { floor, cursor } = req.query;
+    const sort = req.query.sort === 'top' ? 'top' : 'new';
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 50);
 
+    let floorId = 'all';
     if (floor) {
-      // Filter by floor ID or slug
       const matchedFloor = store.findOne('floors', (f) => f._id === floor || f.slug === floor);
-      const floorId = matchedFloor ? matchedFloor._id : floor;
-      posts = posts.filter((p) => p.floor && p.floor.toString() === floorId.toString());
+      floorId = matchedFloor ? matchedFloor._id : floor;
     }
+
+    const floorVer = cache.getFloorVersion(floorId);
+    const cacheKey = `feed:${floorId}:${sort}:${floorVer}:${cursor || 'start'}:${limit}`;
+
+    // Note: Cached public feed allows score changes up to 20 seconds old for high throughput
+    const pageData = await cache.wrap(cacheKey, 20, async () => {
+      let posts = store.getAll('posts').filter((p) => !p.hidden);
+
+      if (floorId !== 'all') {
+        posts = posts.filter((p) => p.floor && p.floor.toString() === floorId.toString());
+      }
+
+      if (sort === 'top') {
+        posts.sort((a, b) => (b.score || 0) - (a.score || 0) || b._id.localeCompare(a._id));
+      } else {
+        posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt) || b._id.localeCompare(a._id));
+      }
+
+      const decoded = decodeCursor(cursor);
+      if (decoded) {
+        if (sort === 'top') {
+          posts = posts.filter((p) => {
+            const pScore = p.score || 0;
+            if (pScore < decoded.score) return true;
+            if (pScore === decoded.score) return p._id.localeCompare(decoded.id) > 0;
+            return false;
+          });
+        } else {
+          const targetTime = new Date(decoded.createdAt).getTime();
+          posts = posts.filter((p) => {
+            const pTime = new Date(p.createdAt).getTime();
+            if (pTime < targetTime) return true;
+            if (pTime === targetTime) return p._id.localeCompare(decoded.id) > 0;
+            return false;
+          });
+        }
+      }
+
+      const slice = posts.slice(0, limit);
+      const nextItem = posts[limit] ? slice[slice.length - 1] : null;
+      const nextCursor = nextItem ? encodeCursor(nextItem, sort) : null;
+
+      const items = slice.map(sanitizePostPublic);
+      return { items, nextCursor };
+    });
 
     const currentUserId = getUserIdFromHeader(req);
-    let sanitized = posts.map((p) => sanitizePost(p, currentUserId));
+    const postIds = pageData.items.map((p) => p._id);
+    const votesMap = store.getUserVotesMap(currentUserId, 'post', postIds);
 
-    if (sort === 'top') {
-      sanitized.sort((a, b) => b.score - a.score);
-    } else {
-      sanitized.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }
+    const enrichedItems = pageData.items.map((post) => {
+      const myVote = votesMap[post._id] || 0;
+      const isOwner = currentUserId && !post.isInnie && post.author && post.author._id === currentUserId;
+      return {
+        ...post,
+        myVote,
+        userVote: myVote,
+        isOwner: Boolean(isOwner)
+      };
+    });
 
-    res.json({ posts: sanitized });
+    res.json({
+      posts: enrichedItems,
+      items: enrichedItems,
+      nextCursor: pageData.nextCursor
+    });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error loading posts' });
   }
 });
 
-// POST /api/posts - Create a new post (Outie or Innie)
+// POST /api/posts - Create post with anti-doxxing check
 router.post('/', auth, (req, res) => {
   try {
     const { title, body, type, floor, isInnie } = req.body;
@@ -118,7 +175,6 @@ router.post('/', auth, (req, res) => {
     const validationErr = validatePost(title, body);
     if (validationErr) return res.status(400).json({ error: validationErr });
 
-    // Doxx check: Block phone numbers and emails
     const contentCheck = checkContent(title, body);
     if (contentCheck.blocked) {
       return res.status(400).json({
@@ -146,75 +202,86 @@ router.post('/', auth, (req, res) => {
       store.update('users', req.user.id, { status: 'Reintegrated' });
     }
 
-    res.status(201).json({ post: sanitizePost(post, req.user.id) });
+    cache.bumpFloorVersion(floor || 'all');
+    cache.bumpFloorVersion('all');
+
+    const sanitized = sanitizePostPublic(post);
+    res.status(201).json({ post: { ...sanitized, myVote: 0, userVote: 0, isOwner: !isInnie } });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error creating post' });
   }
 });
 
-// GET /api/posts/:id - Single post view
-router.get('/:id', (req, res) => {
+// GET /api/posts/:id - Single post view with cache
+router.get('/:id', async (req, res) => {
   try {
-    const post = store.findById('posts', req.params.id);
-    if (!post || post.hidden) {
+    const cachedPost = await cache.wrap(`post:${req.params.id}`, 20, async () => {
+      const p = store.findById('posts', req.params.id);
+      if (!p || p.hidden) return null;
+      return sanitizePostPublic(p);
+    });
+
+    if (!cachedPost) {
       return res.status(404).json({ error: 'Post not found' });
     }
 
     const currentUserId = getUserIdFromHeader(req);
-    res.json({ post: sanitizePost(post, currentUserId) });
+    const votesMap = store.getUserVotesMap(currentUserId, 'post', [cachedPost._id]);
+    const myVote = votesMap[cachedPost._id] || 0;
+    const isOwner = currentUserId && !cachedPost.isInnie && cachedPost.author && cachedPost.author._id === currentUserId;
+
+    res.json({
+      post: {
+        ...cachedPost,
+        myVote,
+        userVote: myVote,
+        isOwner: Boolean(isOwner)
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error loading post' });
   }
 });
 
-// POST /api/posts/:id/vote - Upvote or downvote post
+// POST /api/posts/:id/vote - Atomic vote with delta score update
 router.post('/:id/vote', auth, (req, res) => {
   try {
-    const { value } = req.body; // 1 or -1
+    const { value } = req.body;
     const post = store.findById('posts', req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
-    const userId = req.user.id.toString();
-    let upvotes = (post.upvotes || []).map((id) => id.toString());
-    let downvotes = (post.downvotes || []).map((id) => id.toString());
+    const result = store.castVote({
+      userId: req.user.id.toString(),
+      targetType: 'post',
+      targetId: req.params.id,
+      value
+    });
 
-    if (value === 1) {
-      if (upvotes.includes(userId)) {
-        upvotes = upvotes.filter((id) => id !== userId);
-      } else {
-        upvotes.push(userId);
-        downvotes = downvotes.filter((id) => id !== userId);
-      }
-    } else if (value === -1) {
-      if (downvotes.includes(userId)) {
-        downvotes = downvotes.filter((id) => id !== userId);
-      } else {
-        downvotes.push(userId);
-        upvotes = upvotes.filter((id) => id !== userId);
-      }
-    }
-
-    store.update('posts', post._id, { upvotes, downvotes });
-    const score = upvotes.length - downvotes.length;
-    const myVote = upvotes.includes(userId) ? 1 : downvotes.includes(userId) ? -1 : 0;
-
-    res.json({ score, myVote, userVote: myVote });
+    res.json({
+      score: result.score,
+      myVote: result.userVote,
+      userVote: result.userVote
+    });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error voting on post' });
   }
 });
 
-// DELETE /api/posts/:id - Delete own post
+// DELETE /api/posts/:id - Delete own post and invalidate cache
 router.delete('/:id', auth, (req, res) => {
   try {
     const post = store.findById('posts', req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
-    if (post.author.toString() !== req.user.id.toString()) {
+    if (post.author && post.author.toString() !== req.user.id.toString()) {
       return res.status(403).json({ error: 'You can only delete your own posts' });
     }
 
     store.remove('posts', req.params.id);
+    cache.del(`post:${req.params.id}`);
+    cache.bumpFloorVersion(post.floor || 'all');
+    cache.bumpFloorVersion('all');
+
     res.json({ message: 'Post deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error deleting post' });

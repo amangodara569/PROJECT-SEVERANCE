@@ -1,6 +1,7 @@
 import AsciiArt from './AsciiArt';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-// ErrorState component rendering appropriate ASCII status art with real error text
 export default function ErrorState({ status, message, onRetry }) {
   let piece = 'empty-smoking-server';
   let defaultMessage = 'Server connection disrupted. The work is mysterious and important.';
@@ -14,39 +15,29 @@ export default function ErrorState({ status, message, onRetry }) {
   }
 
   return (
-    <div
-      className="p-8 border flex flex-col items-center justify-center text-center space-y-4 font-mono text-xs"
-      style={{
-        backgroundColor: 'var(--surface)',
-        borderColor: 'var(--border)',
-        borderRadius: '2px'
-      }}
-    >
+    <Card className="p-8 flex flex-col items-center justify-center text-center space-y-4 font-mono text-xs">
       <AsciiArt piece={piece} size={12} still={true} tone="muted" />
 
       <div className="space-y-1">
-        <h3 className="font-bold uppercase tracking-wider" style={{ color: 'var(--text)' }}>
+        <h3 className="font-bold uppercase tracking-wider text-[var(--destructive)] font-mono">
           {status ? `STATUS ${status}` : 'COMMUNICATION ERROR'}
         </h3>
-        <p className="font-sans text-xs" style={{ color: 'var(--muted)' }}>
+        <p className="text-xs text-[var(--muted)]">
           {message || defaultMessage}
         </p>
       </div>
 
       {onRetry && (
-        <button
+        <Button
+          type="button"
           onClick={onRetry}
-          className="px-3 py-1 text-xs uppercase font-semibold border hover:opacity-80"
-          style={{
-            borderColor: 'var(--border)',
-            color: 'var(--text)',
-            backgroundColor: 'transparent'
-          }}
+          variant="outline"
+          size="xs"
+          className="uppercase font-semibold font-mono"
         >
           [ Retry Transmission ]
-        </button>
+        </Button>
       )}
-    </div>
+    </Card>
   );
 }
-

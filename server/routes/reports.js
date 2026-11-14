@@ -2,10 +2,11 @@ const express = require('express');
 const store = require('../db/store');
 const { makeReport } = require('../models/Report');
 const auth = require('../middleware/auth');
+const cache = require('../cache/cache');
 
 const router = express.Router();
 
-// POST /api/reports - Report a post or comment with auto-hide at 5 reports
+// POST /api/reports - Report item and conditionally auto-hide at 5 reports
 router.post('/', auth, (req, res) => {
   try {
     const { targetType, targetId, reason } = req.body;
@@ -21,7 +22,6 @@ router.post('/', auth, (req, res) => {
     const tid = targetId.toString();
     const uid = req.user.id.toString();
 
-    // Check if user already reported this item
     const existing = store.findOne('reports', (r) => r.targetId.toString() === tid && r.reporter.toString() === uid);
     if (existing) {
       return res.status(400).json({ error: 'You have already reported this item' });
@@ -36,16 +36,17 @@ router.post('/', auth, (req, res) => {
 
     store.insert('reports', reportObj);
 
-    // Increment target reportCount and auto-hide if threshold of 5 is met
+    // Atomically increment report count and auto-hide if threshold is met
     const collectionName = targetType === 'post' ? 'posts' : 'comments';
-    const target = store.findById(collectionName, tid);
-    if (target) {
-      const count = (target.reportCount || 0) + 1;
-      const changes = { reportCount: count };
-      if (count >= 5) {
-        changes.hidden = true;
+    const updated = store.inc(collectionName, tid, 'reportCount', 1);
+
+    if (updated && updated.reportCount >= 5 && !updated.hidden) {
+      store.update(collectionName, tid, { hidden: true });
+      if (targetType === 'post') {
+        cache.del(`post:${tid}`);
+        cache.bumpFloorVersion(updated.floor || 'all');
+        cache.bumpFloorVersion('all');
       }
-      store.update(collectionName, tid, changes);
     }
 
     res.status(201).json({

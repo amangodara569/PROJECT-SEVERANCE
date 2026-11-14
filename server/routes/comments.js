@@ -5,25 +5,12 @@ const { makeComment } = require('../models/Comment');
 const auth = require('../middleware/auth');
 const { checkContent } = require('../utils/checkPost');
 const { validateComment } = require('../utils/validate');
+const env = require('../config/env');
 
 const router = express.Router();
 
-// Helper to format comment object with strict privacy rules
-const sanitizeComment = (comment, currentUserId = null) => {
-  const upCount = comment.upvotes?.length || 0;
-  const downCount = comment.downvotes?.length || 0;
-  const score = upCount - downCount;
-
-  let myVote = 0;
-  let isOwner = false;
-  if (currentUserId) {
-    const uid = currentUserId.toString();
-    const isUp = (comment.upvotes || []).some((id) => id.toString() === uid);
-    const isDown = (comment.downvotes || []).some((id) => id.toString() === uid);
-    myVote = isUp ? 1 : isDown ? -1 : 0;
-    isOwner = comment.author && comment.author.toString() === uid;
-  }
-
+// Sanitizes comment and protects Innie anonymity
+const sanitizeCommentPublic = (comment) => {
   let innieHandle = comment.innieHandle;
   if (comment.isInnie && !innieHandle && comment.author) {
     const a = store.findById('users', comment.author);
@@ -38,14 +25,10 @@ const sanitizeComment = (comment, currentUserId = null) => {
     isInnie: Boolean(comment.isInnie),
     innieHandle: Boolean(comment.isInnie) ? (innieHandle || 'Innie-0000') : null,
     reportCount: comment.reportCount || 0,
-    score,
-    myVote,
-    userVote: myVote,
-    isOwner,
+    score: typeof comment.score === 'number' ? comment.score : 0,
     createdAt: comment.createdAt
   };
 
-  // Strict Privacy: Never return author (id, username, email) on Innie comments
   if (!comment.isInnie && comment.author) {
     const authorUser = store.findById('users', comment.author);
     if (authorUser) {
@@ -61,15 +44,14 @@ const sanitizeComment = (comment, currentUserId = null) => {
   return result;
 };
 
-// Optional token extractor
 const getUserIdFromHeader = (req) => {
   try {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+      const decoded = jwt.verify(authHeader.split(' ')[1], env.JWT_SECRET);
       return decoded.id;
     }
-  } catch (e) {}
+  } catch {}
   return null;
 };
 
@@ -80,9 +62,21 @@ router.get('/posts/:id/comments', (req, res) => {
       .filter((c) => c.post && c.post.toString() === req.params.id.toString() && !c.hidden);
 
     const currentUserId = getUserIdFromHeader(req);
+    const commentIds = comments.map(c => c._id);
+    const votesMap = store.getUserVotesMap(currentUserId, 'comment', commentIds);
+
     const sanitized = comments
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-      .map((c) => sanitizeComment(c, currentUserId));
+      .map((c) => {
+        const myVote = votesMap[c._id] || 0;
+        const isOwner = currentUserId && !c.isInnie && c.author && c.author.toString() === currentUserId.toString();
+        return {
+          ...sanitizeCommentPublic(c),
+          myVote,
+          userVote: myVote,
+          isOwner: Boolean(isOwner)
+        };
+      });
 
     res.json({ comments: sanitized });
   } catch (error) {
@@ -90,7 +84,7 @@ router.get('/posts/:id/comments', (req, res) => {
   }
 });
 
-// POST /api/posts/:id/comments - Add comment (top-level or 1-level reply)
+// POST /api/posts/:id/comments - Add comment and atomically increment post comment count
 router.post('/posts/:id/comments', auth, (req, res) => {
   try {
     const { body, parentId, isInnie } = req.body;
@@ -128,49 +122,41 @@ router.post('/posts/:id/comments', auth, (req, res) => {
     });
 
     const comment = store.insert('comments', commentObj);
+    store.inc('posts', post._id, 'commentCount', 1);
 
-    // Increment post's comment count
-    const commentCount = (post.commentCount || 0) + 1;
-    store.update('posts', post._id, { commentCount });
-
-    res.status(201).json({ comment: sanitizeComment(comment, req.user.id) });
+    const sanitized = sanitizeCommentPublic(comment);
+    res.status(201).json({
+      comment: {
+        ...sanitized,
+        myVote: 0,
+        userVote: 0,
+        isOwner: !isInnie
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error adding comment' });
   }
 });
 
-// POST /api/comments/:id/vote - Upvote or downvote comment
+// POST /api/comments/:id/vote - Atomic comment vote with delta score calculation
 router.post('/comments/:id/vote', auth, (req, res) => {
   try {
-    const { value } = req.body; // 1 or -1
+    const { value } = req.body;
     const comment = store.findById('comments', req.params.id);
     if (!comment) return res.status(404).json({ error: 'Comment not found' });
 
-    const userId = req.user.id.toString();
-    let upvotes = (comment.upvotes || []).map((id) => id.toString());
-    let downvotes = (comment.downvotes || []).map((id) => id.toString());
+    const result = store.castVote({
+      userId: req.user.id.toString(),
+      targetType: 'comment',
+      targetId: req.params.id,
+      value
+    });
 
-    if (value === 1) {
-      if (upvotes.includes(userId)) {
-        upvotes = upvotes.filter((id) => id !== userId);
-      } else {
-        upvotes.push(userId);
-        downvotes = downvotes.filter((id) => id !== userId);
-      }
-    } else if (value === -1) {
-      if (downvotes.includes(userId)) {
-        downvotes = downvotes.filter((id) => id !== userId);
-      } else {
-        downvotes.push(userId);
-        upvotes = upvotes.filter((id) => id !== userId);
-      }
-    }
-
-    store.update('comments', comment._id, { upvotes, downvotes });
-    const score = upvotes.length - downvotes.length;
-    const myVote = upvotes.includes(userId) ? 1 : downvotes.includes(userId) ? -1 : 0;
-
-    res.json({ score, myVote, userVote: myVote });
+    res.json({
+      score: result.score,
+      myVote: result.userVote,
+      userVote: result.userVote
+    });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error voting on comment' });
   }

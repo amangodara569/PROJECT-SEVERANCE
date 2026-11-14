@@ -3,8 +3,13 @@ import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
 import BreakRoom from './BreakRoom';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// PostComposer component: creates vents, questions, and hired posts with Break Room safety
 export default function PostComposer({ defaultFloor = '', onPostCreated }) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -19,7 +24,6 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
   const { user } = useAuth();
   const { isInnie } = useMode();
 
-  // Load floors for dropdown when composer opens
   useEffect(() => {
     if (isOpen && floors.length === 0) {
       api.get('/floors')
@@ -28,7 +32,6 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
     }
   }, [isOpen, floors.length]);
 
-  // Handle post creation with Break Room intercept
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !body.trim()) return;
@@ -62,16 +65,17 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
 
   if (!isOpen) {
     return (
-      <div
+      <Card
         onClick={() => setIsOpen(true)}
-        className="p-3 border cursor-pointer font-mono text-xs flex items-center justify-between"
-        style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '2px' }}
+        className="p-3.5 cursor-pointer font-mono text-xs flex flex-row items-center justify-between hover:border-[var(--border-focus)] transition-all select-none"
       >
-        <span style={{ color: 'var(--muted)' }}>What happened? (Share your story...)</span>
-        <span className="text-[10px] px-2 py-0.5 border" style={{ borderColor: 'var(--border)' }}>
-          {isInnie ? `Innie: ${user?.innieHandle}` : `@${user?.username}`}
+        <span className="text-[var(--muted)]">
+          {isInnie ? '💬 Message #general (Share your transition...)' : 'TRANSMIT EXPERIENCE (Report restructuring...)'}
         </span>
-      </div>
+        <Badge variant={isInnie ? 'default' : 'outline'} className="text-[10px]">
+          {isInnie ? `Innie: ${user?.innieHandle}` : `@${user?.username}`}
+        </Badge>
+      </Card>
     );
   }
 
@@ -79,96 +83,110 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
     <>
       <BreakRoom message={breakRoomMsg} onClose={() => setBreakRoomMsg('')} />
 
-      <form
-        onSubmit={handleSubmit}
-        className="p-4 border space-y-3"
-        style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '2px' }}
-      >
-        <div className="flex items-center justify-between">
-          <h3 className="font-mono text-xs uppercase tracking-wider font-bold">Write Post</h3>
-          <button
-            type="button"
-            onClick={() => setIsOpen(false)}
-            className="font-mono text-[11px] hover:underline bg-transparent border-none"
-            style={{ color: 'var(--muted)' }}
-          >
-            Cancel
-          </button>
-        </div>
-
-        {error && (
-          <div className="p-2 text-xs border font-mono" style={{ borderColor: 'var(--border)' }}>
-            {error}
+      <Card className="p-4 space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-mono text-xs uppercase tracking-wider font-bold text-[var(--text)]">
+              {isInnie ? 'New Transmission to Floor' : 'DISPATCH TRANSMISSION'}
+            </h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancel
+            </Button>
           </div>
-        )}
 
-        <input
-          type="text"
-          required
-          placeholder="Post Title..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full p-2 text-xs font-mono border outline-none bg-transparent"
-          style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-        />
+          {error && (
+            <Alert variant="destructive" className="py-2">
+              <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <textarea
-          required
-          placeholder="Tell your story honestly (swear all you want; no phone numbers or emails)..."
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          className="w-full p-2 text-xs border outline-none bg-transparent h-24"
-          style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-        />
+          <div>
+            <Input
+              type="text"
+              required
+              placeholder={isInnie ? "Topic headline..." : "INCIDENT / TOPIC HEADLINE"}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="text-xs"
+            />
+          </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={floor}
-            onChange={(e) => setFloor(e.target.value)}
-            className="p-1.5 text-xs font-mono border bg-transparent"
-            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-          >
-            <option value="" style={{ background: 'var(--bg)' }}>No Floor (All)</option>
-            {floors.map((f) => (
-              <option key={f._id} value={f._id} style={{ background: 'var(--bg)' }}>
-                Floor: {f.name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <Textarea
+              required
+              rows={4}
+              placeholder="Tell your story honestly (raw language allowed; no phone numbers or personal emails)..."
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              className="text-xs"
+            />
+          </div>
 
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="p-1.5 text-xs font-mono border bg-transparent"
-            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-          >
-            <option value="vent" style={{ background: 'var(--bg)' }}>Vent</option>
-            <option value="question" style={{ background: 'var(--bg)' }}>Question</option>
-            <option value="hired" style={{ background: 'var(--bg)' }}>Hired (Comeback)</option>
-          </select>
-        </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={floor}
+              onChange={(e) => setFloor(e.target.value)}
+              style={{
+                borderRadius: 'var(--radius-input)',
+                backgroundColor: 'var(--surface)',
+                borderColor: 'var(--border)',
+                color: 'var(--text)'
+              }}
+              className="p-2 text-xs font-mono border outline-none"
+            >
+              <option value="">Global Feed (All)</option>
+              {floors.map((f) => (
+                <option key={f._id} value={f._id}>
+                  {isInnie ? `# ${f.slug}` : f.name.toUpperCase()}
+                </option>
+              ))}
+            </select>
 
-        <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-          <span className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
-            Posting as: <strong style={{ color: 'var(--text)' }}>{isInnie ? user?.innieHandle : `@${user?.username}`}</strong>
-          </span>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              style={{
+                borderRadius: 'var(--radius-input)',
+                backgroundColor: 'var(--surface)',
+                borderColor: 'var(--border)',
+                color: 'var(--text)'
+              }}
+              className="p-2 text-xs font-mono border outline-none"
+            >
+              <option value="vent">Vent</option>
+              <option value="solidarity">Solidarity</option>
+              <option value="advice">Advice</option>
+              <option value="hired">Hired (Comeback)</option>
+            </select>
+          </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-semibold"
-            style={{ backgroundColor: 'var(--text)', color: 'var(--bg)' }}
-          >
-            {isSubmitting ? 'Posting...' : 'Post'}
-          </button>
-        </div>
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
+            <span className="font-mono text-[11px] text-[var(--muted)]">
+              Author: <strong className="text-[var(--text)]">{isInnie ? user?.innieHandle : `@${user?.username}`}</strong>
+            </span>
 
-        {isInnie && (
-          <p className="font-mono text-[11px] leading-relaxed pt-1" style={{ color: 'var(--muted)' }}>
-            Innie hides your name from other users. It does not hide you from the platform. Never post details that identify you.
-          </p>
-        )}
-      </form>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              variant="default"
+              size="sm"
+            >
+              {isSubmitting ? 'TRANSMITTING...' : isInnie ? 'Send Transmission' : 'DISPATCH RECORD'}
+            </Button>
+          </div>
+
+          {isInnie && (
+            <p className="font-mono text-[11px] leading-relaxed pt-1 text-[var(--muted)]">
+              Innie pseudonymity protects your real username and email. Platform safety guidelines apply.
+            </p>
+          )}
+        </form>
+      </Card>
     </>
   );
 }

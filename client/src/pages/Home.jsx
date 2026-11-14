@@ -4,23 +4,46 @@ import PostComposer from '../components/PostComposer';
 import PostCard from '../components/PostCard';
 import AsciiArt from '../components/AsciiArt';
 import ErrorState from '../components/ErrorState';
+import { useMode } from '../context/ModeContext';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-// Home page: main post feed with New/Top sorting and composer
 export default function Home() {
   const [posts, setPosts] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
   const [sort, setSort] = useState('new');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const { isInnie } = useMode();
 
-  // Fetch feed posts based on sort order
   const fetchPosts = async () => {
+    setLoading(true);
+    setError('');
     try {
-      const res = await api.get(`/posts?sort=${sort}`);
-      setPosts(res.data.posts || []);
+      const res = await api.get(`/posts?sort=${sort}&limit=20`);
+      const items = res.data.posts || res.data.items || [];
+      setPosts(items);
+      setNextCursor(res.data.nextCursor || null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load posts');
+      setError(err.response?.data?.error?.message || err.response?.data?.error || 'Failed to load posts');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await api.get(`/posts?sort=${sort}&limit=20&cursor=${encodeURIComponent(nextCursor)}`);
+      const items = res.data.posts || res.data.items || [];
+      setPosts((prev) => [...prev, ...items]);
+      setNextCursor(res.data.nextCursor || null);
+    } catch (err) {
+      console.error('Failed to load more posts:', err.message);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -28,89 +51,102 @@ export default function Home() {
     fetchPosts();
   }, [sort]);
 
-  // Handle post created by composer
   const handlePostCreated = (newPost) => {
     setPosts((prev) => [newPost, ...prev]);
   };
 
-  // Cast vote on a post
   const handleVote = async (postId, value) => {
+    const previousPosts = [...posts];
+
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p._id !== postId) return p;
+        const currentVote = p.userVote || p.myVote || 0;
+        let delta = 0;
+        let nextVote = 0;
+        if (currentVote === value) {
+          delta = -value;
+          nextVote = 0;
+        } else {
+          delta = value - currentVote;
+          nextVote = value;
+        }
+        return {
+          ...p,
+          score: (p.score || 0) + delta,
+          myVote: nextVote,
+          userVote: nextVote
+        };
+      })
+    );
+
     try {
       const res = await api.post(`/posts/${postId}/vote`, { value });
       setPosts((prev) =>
         prev.map((p) =>
-          p._id === postId ? { ...p, score: res.data.score, userVote: res.data.userVote } : p
+          p._id === postId
+            ? { ...p, score: res.data.score, userVote: res.data.userVote, myVote: res.data.userVote }
+            : p
         )
       );
     } catch (err) {
+      setPosts(previousPosts);
       console.error('Vote failed:', err.message);
     }
   };
 
-  // Delete own post
   const handleDelete = async (postId) => {
     if (!window.confirm('Delete this post?')) return;
     try {
       await api.delete(`/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p._id !== postId));
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete post');
+      alert(err.response?.data?.error?.message || err.response?.data?.error || 'Failed to delete post');
     }
   };
 
   return (
     <div className="space-y-4">
-      {/* Post Composer */}
       <PostComposer onPostCreated={handlePostCreated} />
 
-      {/* Sort switcher */}
-      <div className="flex items-center justify-between border-b pb-2 font-mono text-xs" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-3">
-          <button
+      <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 font-mono text-xs">
+        <div className="flex items-center gap-1.5">
+          <Button
             type="button"
+            variant={sort === 'new' ? 'default' : 'ghost'}
+            size="xs"
             onClick={() => setSort('new')}
-            className={`border-none bg-transparent uppercase tracking-wider ${
-              sort === 'new' ? 'font-bold' : 'hover:opacity-75'
-            }`}
-            style={{ color: sort === 'new' ? 'var(--text)' : 'var(--muted)' }}
+            className="uppercase tracking-wider font-bold"
           >
-            NEW
-          </button>
-          <span style={{ color: 'var(--border)' }}>|</span>
-          <button
+            {isInnie ? 'Recent' : '⚡ LATEST'}
+          </Button>
+          <Button
             type="button"
+            variant={sort === 'top' ? 'default' : 'ghost'}
+            size="xs"
             onClick={() => setSort('top')}
-            className={`border-none bg-transparent uppercase tracking-wider ${
-              sort === 'top' ? 'font-bold' : 'hover:opacity-75'
-            }`}
-            style={{ color: sort === 'top' ? 'var(--text)' : 'var(--muted)' }}
+            className="uppercase tracking-wider font-bold"
           >
-            TOP
-          </button>
+            {isInnie ? 'Popular' : '🔥 TOP SCORE'}
+          </Button>
         </div>
+
+        <span className="text-[10px] text-[var(--muted)]">
+          {isInnie ? 'Viewing #general' : 'STREAM: REALTIME'}
+        </span>
       </div>
 
-      {/* Error display */}
       {error && (
         <ErrorState message={error} onRetry={fetchPosts} />
       )}
 
-      {/* Posts List */}
       {loading ? (
-        <p className="font-mono text-xs" style={{ color: 'var(--muted)' }}>Loading...</p>
+        <p className="font-mono text-xs text-[var(--muted)] py-4 text-center">Loading transmissions...</p>
       ) : posts.length === 0 ? (
-        <div
-          className="p-8 text-center border font-mono text-xs flex flex-col items-center justify-center space-y-3"
-          style={{
-            borderColor: 'var(--border)',
-            color: 'var(--muted)',
-            backgroundColor: 'var(--surface)',
-            borderRadius: '2px'
-          }}
-        >
+        <Card className="p-8 text-center flex flex-col items-center justify-center space-y-3 font-mono text-xs text-[var(--muted)]">
           <AsciiArt piece="empty-cobweb-folder" size={12} still={true} tone="muted" />
-          <p>Nothing here yet. The work is mysterious and important.</p>
-        </div>
+          <p className="text-sm">Nothing here yet. The work is mysterious and important.</p>
+        </Card>
       ) : (
         <div className="space-y-3">
           {posts.map((post) => (
@@ -121,6 +157,21 @@ export default function Home() {
               onDelete={handleDelete}
             />
           ))}
+
+          {nextCursor && (
+            <div className="pt-2 text-center">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="font-mono text-xs tracking-wider"
+              >
+                {loadingMore ? 'FETCHING OLDER TRANSMISSIONS...' : 'LOAD MORE TRANSMISSIONS ↓'}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

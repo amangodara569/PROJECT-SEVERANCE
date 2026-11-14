@@ -3,9 +3,8 @@ import api from '../api/api';
 
 const AuthContext = createContext(null);
 
-// Temporary preview user and valid token so user can browse the UI without logging in
 const PREVIEW_USER = {
-  _id: '88157f86-5db6-4dbe-8763-9ca9c3e92cb1',
+  _id: 'b54b49e7-64a2-4c06-9bbe-12f7bdca0c2b',
   username: 'aman_test',
   email: 'aman@lumon.com',
   headline: 'Lead System Architect at TechNova',
@@ -13,24 +12,25 @@ const PREVIEW_USER = {
   status: 'Employed',
   innieHandle: 'Innie-1001',
   isAdmin: true,
-  joinedFloors: []
+  joinedFloors: [
+    '0a41239d-8a67-46f5-b185-ea9644ac5f84',
+    '7766bead-f247-490c-9ace-61950dad0e61'
+  ]
 };
-const PREVIEW_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg4MTU3Zjg2LTVkYjYtNGRiZS04NzYzLTljYTljM2U5MmNiMSIsImlhdCI6MTc5MzYzMDEyOSwiZXhwIjoxNzk2MjIyMTI5fQ.R_87D9W5A8rCkZga8_WAJonLxVVA3nolEk4WjNU48c0';
 
-// AuthProvider manages user authentication state
+const PREVIEW_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI1NGI0OWU3LTY0YTItNGMwNi05YmJlLTEyZjdiZGNhMGMyYiIsImlhdCI6MTc5NDY0MTUzMiwiZXhwIjoxNzk3MjMzNTMyfQ.JLXelbheRDh4zZNWsj8ii9GUBkUePTj88UHTV_RKHSk';
+
 export const AuthProvider = ({ children }) => {
-  // Login bypassed for UI preview
   const [user, setUser] = useState(() => PREVIEW_USER);
   const [token, setToken] = useState(() => localStorage.getItem('token') || PREVIEW_TOKEN);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
-      localStorage.setItem('token', PREVIEW_TOKEN);
-    }
+    localStorage.setItem('token', PREVIEW_TOKEN);
+    setToken(PREVIEW_TOKEN);
+    setUser(PREVIEW_USER);
   }, []);
 
-  // Register a new user and store the returned token
   const register = async (userData) => {
     const response = await api.post('/auth/register', userData);
     const { token: newToken, user: newUser } = response.data;
@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  // Log in with email and password and store token
   const login = async (credentials) => {
     const response = await api.post('/auth/login', credentials);
     const { token: newToken, user: newUser } = response.data;
@@ -50,7 +49,6 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  // Clear session data and log out
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -64,7 +62,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to access AuthContext
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

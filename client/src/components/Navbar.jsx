@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useMode } from '../context/ModeContext';
 import SeverToggle from './SeverToggle';
 import SystemGuideModal from './SystemGuideModal';
+import { Button } from '@/components/ui/button';
 
-// Top navigation bar: logo on left, SeverToggle center-right, Guide button & user profile on right
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { isInnie } = useMode();
   const [showGuide, setShowGuide] = useState(() => {
     return localStorage.getItem('hasSeenSystemGuide') !== 'true';
   });
@@ -21,73 +23,78 @@ export default function Navbar() {
       <SystemGuideModal isOpen={showGuide} onClose={handleCloseGuide} />
 
       <header
-        className="w-full border-b sticky top-0 z-40 px-4 py-2"
-        style={{
-          backgroundColor: 'var(--bg)',
-          borderColor: 'var(--border)'
-        }}
+        className={`w-full border-b sticky top-0 z-40 px-4 py-2.5 transition-colors ${
+          isInnie
+            ? 'bg-[#ffffff] border-[#e6e6e6] shadow-xs'
+            : 'bg-[#000000] border-[#222222]'
+        }`}
       >
         <div className="max-w-[1100px] mx-auto flex items-center justify-between">
-          <Link
-            to="/"
-            className="font-mono text-base font-bold tracking-[0.2em] uppercase hover:opacity-80"
-            style={{ color: 'var(--text)' }}
-          >
-            LINKED OUT
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className={`text-sm sm:text-base font-bold tracking-[0.15em] uppercase hover:opacity-85 transition-opacity flex items-center gap-2 ${
+                isInnie ? 'text-[#4a154b]' : 'text-[#FFFFFF]'
+              }`}
+            >
+              <span className={`inline-block w-2.5 h-2.5 ${isInnie ? 'bg-[#4a154b] rounded-full' : 'bg-[#FFC000] rotate-45'}`} />
+              LINKED OUT
+            </Link>
 
-          <div className="flex items-center gap-4">
+            <span className={`text-[10px] font-mono px-2 py-0.5 tracking-wider uppercase ${
+              isInnie
+                ? 'bg-[#f9f0ff] text-[#4a154b] rounded-full border border-[#ebd8f5]'
+                : 'bg-[#181818] text-[#FFC000] border border-[#2a2a2a]'
+            }`}>
+              {isInnie ? '# workplace' : 'v12 corpo'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 sm:gap-4">
             <SeverToggle />
 
-            {/* Guide trigger button */}
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="xs"
               onClick={() => setShowGuide(true)}
-              className="px-2 py-0.5 text-xs font-mono font-bold border hover:opacity-80"
-              style={{
-                borderColor: 'var(--border)',
-                color: 'var(--text)',
-                backgroundColor: 'var(--surface)'
-              }}
-              title="System Guide (?)"
+              className="font-mono font-bold text-xs"
+              title="System Guide"
             >
               ?
-            </button>
+            </Button>
 
             {user && (
-              <div className="flex items-center gap-3 font-mono text-xs">
+              <div className="flex items-center gap-2 sm:gap-3 font-mono text-xs">
                 {user.isAdmin && (
                   <Link
                     to="/review"
-                    className="px-2 py-0.5 text-[11px] border uppercase hover:opacity-80"
-                    style={{
-                      borderColor: 'var(--border)',
-                      color: 'var(--text)',
-                      backgroundColor: 'var(--surface)'
-                    }}
+                    className={`px-2.5 py-1 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      isInnie
+                        ? 'bg-[#f4ede4] text-[#4a154b] rounded-full hover:bg-[#ebd8f5]'
+                        : 'bg-[#202020] text-[#FFC000] border border-[#2c2c2c] hover:border-[#FFC000]'
+                    }`}
                   >
-                    Audit
+                    AUDIT
                   </Link>
                 )}
+
                 <Link
                   to={`/u/${user.username}`}
-                  className="hover:underline"
-                  style={{ color: 'var(--text)' }}
+                  className={`hover:underline font-mono text-xs ${
+                    isInnie ? 'text-[#1264a3]' : 'text-[#FFFFFF]'
+                  }`}
                 >
                   @{user.username}
                 </Link>
-                <button
-                  type="button"
+
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={logout}
-                  className="px-2 py-1 text-[11px] border"
-                  style={{
-                    borderColor: 'var(--border)',
-                    color: 'var(--muted)',
-                    backgroundColor: 'transparent'
-                  }}
+                  className="font-mono text-xs"
                 >
                   Logout
-                </button>
+                </Button>
               </div>
             )}
           </div>

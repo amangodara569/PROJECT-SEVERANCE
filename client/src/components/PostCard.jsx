@@ -4,8 +4,11 @@ import VoteButtons from './VoteButtons';
 import api from '../api/api';
 import AsciiCustom from './AsciiCustom';
 import innieGlyph from '../ascii/pieces/innie-glyph';
+import { useMode } from '../context/ModeContext';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
-// Formats timestamp into short relative format
 const timeAgo = (dateStr) => {
   const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
   if (seconds < 60) return 'just now';
@@ -16,13 +19,12 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(hours / 24)}d ago`;
 };
 
-// PostCard component with voting, comments link, report button, and author identity
 export default function PostCard({ post, onVote, onDelete }) {
   const [reported, setReported] = useState(false);
+  const { isInnie } = useMode();
   const isPseudonymous = post.isInnie;
   const authorDisplay = isPseudonymous ? post.innieHandle : `@${post.author?.username || 'user'}`;
 
-  // Report post to moderation
   const handleReport = async () => {
     if (reported) return;
     try {
@@ -35,14 +37,7 @@ export default function PostCard({ post, onVote, onDelete }) {
   };
 
   return (
-    <article
-      className="p-4 border flex gap-3 transition-colors"
-      style={{
-        backgroundColor: 'var(--surface)',
-        borderColor: 'var(--border)',
-        borderRadius: '2px'
-      }}
-    >
+    <Card className="p-4 flex flex-row gap-3.5 hover:border-[var(--border-focus)] transition-colors">
       <VoteButtons
         score={post.score}
         userVote={post.userVote}
@@ -50,71 +45,88 @@ export default function PostCard({ post, onVote, onDelete }) {
       />
 
       <div className="flex-1 min-w-0">
-        <h2 className="font-mono text-sm font-bold tracking-tight mb-1 hover:underline">
-          <Link to={`/post/${post._id}`} style={{ color: 'var(--text)' }}>
+        <h2 className="text-sm font-bold tracking-tight mb-1">
+          <Link
+            to={`/post/${post._id}`}
+            className={`transition-colors hover:underline ${
+              isInnie ? 'text-[#1d1d1d] hover:text-[#4a154b]' : 'text-[#FFFFFF] hover:text-[#FFC000]'
+            }`}
+          >
             {post.title}
           </Link>
         </h2>
 
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] mb-2" style={{ color: 'var(--muted)' }}>
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] mb-2 text-[var(--muted)]">
           {post.floor && (
             <>
-              <Link to={`/floors/${post.floor.slug}`} className="hover:underline font-semibold" style={{ color: 'var(--text)' }}>
-                {post.floor.name}
-              </Link>
+              <Badge variant={isInnie ? 'default' : 'outline'} className="text-[10px]">
+                <Link to={`/floors/${post.floor.slug}`} className="hover:underline">
+                  {isInnie ? `# ${post.floor.slug}` : post.floor.name.toUpperCase()}
+                </Link>
+              </Badge>
               <span>·</span>
             </>
           )}
 
           {isPseudonymous ? (
-            <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--text)' }}>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--text)]">
               <AsciiCustom make={innieGlyph} options={{ handle: post.innieHandle }} size={5} still={true} tone="text" />
               <span>{authorDisplay}</span>
             </span>
           ) : (
-            <span>{authorDisplay}</span>
+            <span className="text-[var(--text)]">{authorDisplay}</span>
           )}
 
           {(post.type === 'hired' || post.author?.status === 'Reintegrated') && (
-            <span className="px-1 border text-[9px] uppercase tracking-wider" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>
-              Reintegrated
-            </span>
+            <Badge variant="cyan" className="text-[10px]">
+              REINTEGRATED
+            </Badge>
           )}
 
           <span>·</span>
           <span>{timeAgo(post.createdAt)}</span>
         </div>
 
-        <p className="text-xs line-clamp-2 leading-relaxed mb-3" style={{ color: 'var(--text)' }}>
+        <p className="text-xs line-clamp-2 leading-relaxed mb-3 text-[var(--text)]">
           {post.body}
         </p>
 
-        <div className="flex items-center gap-4 font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
-          <Link to={`/post/${post._id}`} className="hover:underline">
-            [ {post.commentCount || 0} comments ]
+        <div className="flex items-center gap-2 font-mono text-[11px]">
+          <Link
+            to={`/post/${post._id}`}
+            className={`px-2 py-1 text-xs flex items-center gap-1 transition-colors ${
+              isInnie
+                ? 'bg-[#f4ede4] text-[#4a154b] rounded-full hover:bg-[#ebd8f5]'
+                : 'bg-[#202020] text-[#FFFFFF] hover:border-[#FFC000] border border-[#2c2c2c]'
+            }`}
+          >
+            <span>💬</span>
+            <span>{post.commentCount || 0} comments</span>
           </Link>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="xs"
             onClick={handleReport}
-            className="hover:underline text-[11px] bg-transparent border-none p-0 cursor-pointer"
-            style={{ color: reported ? 'var(--text)' : 'var(--muted)' }}
+            className="text-[11px]"
           >
-            [ {reported ? 'Reported' : 'Report'} ]
-          </button>
+            {reported ? '✓ Reported' : '⚑ Report'}
+          </Button>
 
           {post.isOwner && (
-            <button
+            <Button
               type="button"
+              variant="destructive"
+              size="xs"
               onClick={() => onDelete && onDelete(post._id)}
-              className="hover:underline text-[11px] bg-transparent border-none p-0 cursor-pointer"
-              style={{ color: 'var(--muted)' }}
+              className="text-[11px]"
             >
-              [ Delete ]
-            </button>
+              ✕ Delete
+            </Button>
           )}
         </div>
       </div>
-    </article>
+    </Card>
   );
 }

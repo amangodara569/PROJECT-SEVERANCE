@@ -1,26 +1,37 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ModeProvider } from './context/ModeContext';
 import AppLayout from './components/AppLayout';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home';
-import Floors from './pages/Floors';
-import FloorPage from './pages/FloorPage';
-import PostPage from './pages/PostPage';
-import SeveredFloor from './pages/SeveredFloor';
-import Comeback from './pages/Comeback';
-import Profile from './pages/Profile';
-import Handbook from './pages/Handbook';
-import Wellness from './pages/Wellness';
-import ReviewQueue from './pages/ReviewQueue';
-import NotFound from './pages/NotFound';
 
-// Inner router handling public and protected routes
+// Code-split all page components with React.lazy
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Home = lazy(() => import('./pages/Home'));
+const Floors = lazy(() => import('./pages/Floors'));
+const FloorPage = lazy(() => import('./pages/FloorPage'));
+const PostPage = lazy(() => import('./pages/PostPage'));
+const SeveredFloor = lazy(() => import('./pages/SeveredFloor'));
+const Comeback = lazy(() => import('./pages/Comeback'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Handbook = lazy(() => import('./pages/Handbook'));
+const Wellness = lazy(() => import('./pages/Wellness'));
+const ReviewQueue = lazy(() => import('./pages/ReviewQueue'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+function RouteLoading() {
+  return (
+    <div
+      className="min-h-[50vh] flex items-center justify-center font-mono text-xs text-muted-foreground"
+    >
+      Loading transmission...
+    </div>
+  );
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
-  // Show muted text loading indicator while session initializes
   if (loading) {
     return (
       <div
@@ -33,37 +44,38 @@ function AppRoutes() {
   }
 
   return (
-    <Routes>
-      {user ? (
-        <>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/floors" element={<Floors />} />
-            <Route path="/floors/:slug" element={<FloorPage />} />
-            <Route path="/post/:id" element={<PostPage />} />
-            <Route path="/severed-floor" element={<SeveredFloor />} />
-            <Route path="/comeback" element={<Comeback />} />
-            <Route path="/u/:username" element={<Profile />} />
-            <Route path="/handbook" element={<Handbook />} />
-            <Route path="/wellness" element={<Wellness />} />
-            <Route path="/review" element={user.isAdmin ? <ReviewQueue /> : <Navigate to="/" replace />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/register" element={<Navigate to="/" replace />} />
-        </>
-      ) : (
-        <>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </>
-      )}
-    </Routes>
+    <Suspense fallback={<RouteLoading />}>
+      <Routes>
+        {user ? (
+          <>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/floors" element={<Floors />} />
+              <Route path="/floors/:slug" element={<FloorPage />} />
+              <Route path="/post/:id" element={<PostPage />} />
+              <Route path="/severed-floor" element={<SeveredFloor />} />
+              <Route path="/comeback" element={<Comeback />} />
+              <Route path="/u/:username" element={<Profile />} />
+              <Route path="/handbook" element={<Handbook />} />
+              <Route path="/wellness" element={<Wellness />} />
+              <Route path="/review" element={user.isAdmin ? <ReviewQueue /> : <Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/register" element={<Navigate to="/" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        )}
+      </Routes>
+    </Suspense>
   );
 }
 
-// Root application component wrapped with Mode, Auth, and Router providers
 export default function App() {
   return (
     <BrowserRouter>

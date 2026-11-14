@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import api from '../api/api';
 import AsciiArt from '../components/AsciiArt';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// ReviewQueue: Admin review dashboard for reported posts and comments
 export default function ReviewQueue() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  // Fetch flagged transmissions from admin endpoint
   const loadQueue = async () => {
     try {
       setLoading(true);
@@ -27,7 +29,6 @@ export default function ReviewQueue() {
     loadQueue();
   }, []);
 
-  // Dismiss reports and unhide item
   const handleDismiss = async (targetType, targetId) => {
     try {
       await api.post(`/admin/reports/${targetType}/${targetId}/dismiss`);
@@ -39,7 +40,6 @@ export default function ReviewQueue() {
     }
   };
 
-  // Permanently delete flagged item
   const handleRemove = async (targetType, targetId) => {
     if (!window.confirm('Sever this transmission permanently from the system?')) return;
     try {
@@ -54,7 +54,7 @@ export default function ReviewQueue() {
 
   if (loading) {
     return (
-      <div className="font-mono text-xs py-8 text-center" style={{ color: 'var(--muted)' }}>
+      <div className="font-mono text-xs py-8 text-center text-[var(--color-text-muted)]">
         Retrieving compliance audit records...
       </div>
     );
@@ -62,121 +62,121 @@ export default function ReviewQueue() {
 
   return (
     <div className="space-y-6 max-w-2xl font-mono text-xs">
-      <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
         <div>
-          <h1 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text)' }}>
+          <h1 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)]">
             DISCIPLINARY REVIEW QUEUE
           </h1>
-          <p className="text-[11px]" style={{ color: 'var(--muted)' }}>
+          <p className="text-[11px] text-[var(--color-text-muted)]">
             Audit transmissions flagged by community members.
           </p>
         </div>
-        <button
+        <Button
           onClick={loadQueue}
-          className="px-2.5 py-1 text-[11px] border uppercase hover:opacity-80"
-          style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+          variant="outline"
+          size="xs"
+          className="uppercase font-mono"
         >
           [ Refresh ]
-        </button>
+        </Button>
       </div>
 
       {notice && (
-        <div className="p-2.5 border text-xs font-mono" style={{ borderColor: 'var(--text)', color: 'var(--text)', backgroundColor: 'var(--surface)' }}>
+        <Card className="p-2.5 font-mono text-xs bg-[var(--color-bg-card)] border border-[var(--color-border)] text-[var(--color-text-primary)]">
           {notice}
-        </div>
+        </Card>
       )}
 
       {error && (
-        <div className="p-3 border text-xs" style={{ borderColor: 'red', color: 'red' }}>
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
+        </Alert>
       )}
 
       {items.length === 0 ? (
-        <div
-          className="p-8 border text-center flex flex-col items-center justify-center space-y-3"
-          style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '2px' }}
+        <Card
+          className="p-8 text-center flex flex-col items-center justify-center space-y-3 bg-[var(--color-bg-card)] border border-[var(--color-border)]"
         >
           <AsciiArt piece="empty-all-caught-up" size={12} still={true} tone="muted" />
-          <div className="font-bold uppercase tracking-wider" style={{ color: 'var(--text)' }}>
+          <div className="font-bold uppercase tracking-wider text-[var(--color-text-primary)]">
             Queue is clear.
           </div>
-          <p className="font-sans text-xs italic" style={{ color: 'var(--muted)' }}>
+          <p className="text-xs italic text-[var(--color-text-muted)]">
             The work is mysterious and important. All transmissions meet Lumon compliance standards.
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {items.map((item) => (
-            <div
+            <Card
               key={item._id}
-              className="p-4 border space-y-3"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '2px' }}
+              className="p-4 space-y-3 bg-[var(--color-bg-card)] border border-[var(--color-border)]"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 text-[10px] uppercase font-bold border" style={{ borderColor: 'var(--border)' }}>
+                  <Badge variant="outline" size="sm" className="uppercase font-mono text-[10px]">
                     {item.targetType}
-                  </span>
+                  </Badge>
                   {item.hidden ? (
-                    <span className="px-1.5 py-0.5 text-[10px] uppercase font-bold" style={{ backgroundColor: 'red', color: 'white' }}>
+                    <Badge variant="destructive" size="sm" className="uppercase font-mono text-[10px]">
                       AUTO-HIDDEN (5+ REPORTS)
-                    </span>
+                    </Badge>
                   ) : (
-                    <span className="px-1.5 py-0.5 text-[10px] uppercase font-bold border" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+                    <Badge variant="secondary" size="sm" className="uppercase font-mono text-[10px]">
                       FLAGGED ({item.reportCount} reports)
-                    </span>
+                    </Badge>
                   )}
                 </div>
-                <span className="text-[11px]" style={{ color: 'var(--muted)' }}>
+                <span className="text-[11px] text-[var(--color-text-muted)]">
                   By: {item.authorDisplay}
                 </span>
               </div>
 
               {item.title && (
-                <h3 className="font-bold text-xs uppercase" style={{ color: 'var(--text)' }}>
+                <h3 className="font-bold text-xs uppercase text-[var(--color-text-primary)]">
                   {item.title}
                 </h3>
               )}
 
-              <p className="font-sans text-xs leading-relaxed whitespace-pre-wrap p-2 border" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}>
+              <p className="text-xs leading-relaxed whitespace-pre-wrap p-2 border border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)]" style={{ borderRadius: 'var(--radius-card)' }}>
                 {item.body}
               </p>
 
               <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold" style={{ color: 'var(--muted)' }}>
+                <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)]">
                   Report Reasons:
                 </span>
-                <ul className="list-disc list-inside text-[11px] font-sans" style={{ color: 'var(--muted)' }}>
+                <ul className="list-disc list-inside text-[11px] text-[var(--color-text-muted)]">
                   {item.reasons.map((r, idx) => (
                     <li key={idx}>{r}</li>
                   ))}
                 </ul>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                <button
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
+                <Button
                   type="button"
+                  variant="outline"
+                  size="xs"
                   onClick={() => handleDismiss(item.targetType, item._id)}
-                  className="px-3 py-1 text-xs uppercase font-semibold border hover:opacity-80"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                  className="font-mono text-xs uppercase"
                 >
                   Dismiss Reports
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="destructive"
+                  size="xs"
                   onClick={() => handleRemove(item.targetType, item._id)}
-                  className="px-3 py-1 text-xs uppercase font-semibold hover:opacity-80"
-                  style={{ backgroundColor: 'red', color: 'white' }}
+                  className="font-mono text-xs uppercase"
                 >
                   Sever Transmission
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
     </div>
   );
 }
-

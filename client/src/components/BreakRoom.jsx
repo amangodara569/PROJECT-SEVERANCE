@@ -1,48 +1,37 @@
 import AsciiArt from './AsciiArt';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-// BreakRoom modal: displayed when a submission contains forbidden contact info
 export default function BreakRoom({ message, onClose }) {
   if (!message) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div
-        className="w-full max-w-sm p-6 border text-center font-mono space-y-4"
-        style={{
-          backgroundColor: 'var(--surface)',
-          borderColor: 'var(--border)',
-          color: 'var(--text)',
-          borderRadius: '2px'
-        }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+      <Card className="w-full max-w-sm p-6 text-center font-mono space-y-4 shadow-xl border-[var(--border)]">
         <div className="flex justify-center mb-1">
           <AsciiArt piece="hourglass" size={10} still={false} tone="text" />
         </div>
 
-        <h2 className="text-sm font-bold tracking-widest uppercase">
-          BREAK ROOM
+        <h2 className="text-sm font-bold tracking-widest uppercase text-[var(--destructive)] font-mono">
+          BREAK ROOM INTERCEPT
         </h2>
 
-        <div className="space-y-3 text-xs leading-relaxed" style={{ color: 'var(--text)' }}>
+        <div className="space-y-3 text-xs leading-relaxed text-[var(--text)]">
           <p>{message}</p>
         </div>
 
         <div className="pt-2">
-          <button
+          <Button
             type="button"
+            variant="default"
+            size="sm"
             onClick={onClose}
-            className="w-full py-2 px-4 text-xs font-mono uppercase tracking-wider font-semibold"
-            style={{
-              backgroundColor: 'var(--text)',
-              color: 'var(--bg)',
-              border: '1px solid var(--text)'
-            }}
+            className="w-full font-mono uppercase tracking-wider font-semibold"
           >
-            Edit Post
-          </button>
+            EDIT TRANSMISSION
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
-

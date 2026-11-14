@@ -1,3 +1,6 @@
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 
 // Detailed guide sections with beginner-friendly explanations and examples
@@ -253,42 +256,30 @@ export default function SystemGuideModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-mono">
-      <div
-        className="w-full max-w-2xl p-6 border flex flex-col max-h-[90vh] overflow-hidden"
-        style={{
-          backgroundColor: 'var(--surface)',
-          borderColor: 'var(--border)',
-          color: 'var(--text)',
-          borderRadius: '2px'
-        }}
-      >
+      <Card className="w-full max-w-2xl p-6 flex flex-col max-h-[90vh] overflow-hidden bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b pb-3 mb-4" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex items-center justify-between border-b pb-3 mb-4 border-[var(--color-border)]">
           <div>
-            <h2 className="text-sm font-bold tracking-[0.2em] uppercase">LINKED OUT — USER MANUAL</h2>
-            <p className="text-[11px]" style={{ color: 'var(--muted)' }}>Everything you need to know. Click through each section.</p>
+            <h2 className="text-sm font-bold tracking-[0.2em] uppercase text-[var(--color-text-primary)]">LINKED OUT — USER MANUAL</h2>
+            <p className="text-[11px] text-[var(--color-text-muted)]">Everything you need to know. Click through each section.</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-xs px-2 py-1 border hover:opacity-80 uppercase"
-            style={{ borderColor: 'var(--border)', color: 'var(--muted)', background: 'transparent' }}
-          >
+          <Button variant="ghost" size="xs" onClick={onClose} className="uppercase text-[var(--color-text-muted)]">
             ✕ Close
-          </button>
+          </Button>
         </div>
 
         {/* Navigation tabs — scrollable row */}
-        <div className="flex gap-1 overflow-x-auto pb-2 mb-4 border-b text-[10px]" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex gap-1 overflow-x-auto pb-2 mb-4 border-b border-[var(--color-border)] text-[10px]">
           {GUIDE_SECTIONS.map((sec, i) => (
             <button
               key={sec.id}
               onClick={() => setActiveTab(i)}
-              className={`px-2.5 py-1 whitespace-nowrap uppercase border ${i === activeTab ? 'font-bold' : ''}`}
-              style={{
-                backgroundColor: i === activeTab ? 'var(--text)' : 'transparent',
-                color: i === activeTab ? 'var(--bg)' : 'var(--muted)',
-                borderColor: 'var(--border)'
-              }}
+              className={`px-2.5 py-1 whitespace-nowrap uppercase border transition-colors ${
+                i === activeTab
+                  ? 'bg-[var(--color-primary)] text-[var(--color-primary-fg)] font-bold border-[var(--color-primary)]'
+                  : 'bg-transparent text-[var(--color-text-muted)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]'
+              }`}
+              style={{ borderRadius: 'var(--radius-btn)' }}
             >
               {sec.title.split('.')[1]?.trim() || sec.title}
             </button>
@@ -299,12 +290,12 @@ export default function SystemGuideModal({ isOpen, onClose }) {
         <div className="flex-1 overflow-y-auto pr-2 space-y-4 text-xs">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold uppercase text-sm" style={{ color: 'var(--text)' }}>{current.title}</span>
-              <span className="text-[9px] uppercase px-1.5 py-0.5 border" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+              <span className="font-bold uppercase text-sm text-[var(--color-text-primary)]">{current.title}</span>
+              <Badge variant="outline" size="sm" className="text-[9px] uppercase">
                 {current.tag}
-              </span>
+              </Badge>
             </div>
-            <p className="font-sans text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+            <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
               {current.description}
             </p>
           </div>
@@ -314,13 +305,13 @@ export default function SystemGuideModal({ isOpen, onClose }) {
             {current.details.map((item, idx) => (
               <div
                 key={idx}
-                className="p-3 border space-y-1.5"
-                style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', borderRadius: '2px' }}
+                className="p-3 border border-[var(--color-border)] space-y-1.5 bg-[var(--color-bg-subtle)]"
+                style={{ borderRadius: 'var(--radius-card)' }}
               >
-                <span className="text-[11px] uppercase font-bold tracking-wider block" style={{ color: 'var(--text)' }}>
+                <span className="text-[11px] uppercase font-bold tracking-wider block text-[var(--color-text-primary)]">
                   {item.heading}
                 </span>
-                <p className="font-sans text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted)' }}>
+                <p className="text-xs leading-relaxed whitespace-pre-line text-[var(--color-text-secondary)]">
                   {item.text}
                 </p>
               </div>
@@ -329,40 +320,43 @@ export default function SystemGuideModal({ isOpen, onClose }) {
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-between border-t pt-4 mt-4" style={{ borderColor: 'var(--border)' }}>
-          <div className="text-[10px] flex items-center gap-3" style={{ color: 'var(--muted)' }}>
+        <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4 mt-4">
+          <div className="text-[10px] flex items-center gap-3 text-[var(--color-text-muted)]">
             <span>Section {activeTab + 1} of {GUIDE_SECTIONS.length}</span>
             {activeTab > 0 && (
-              <button
+              <Button
+                variant="outline"
+                size="xs"
                 onClick={() => setActiveTab((prev) => prev - 1)}
-                className="px-2 py-0.5 border uppercase text-[10px] hover:opacity-80"
-                style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                className="uppercase text-[10px]"
               >
                 ← Back
-              </button>
+              </Button>
             )}
           </div>
           <div className="flex gap-2">
             {activeTab < GUIDE_SECTIONS.length - 1 ? (
-              <button
+              <Button
+                variant="default"
+                size="sm"
                 onClick={() => setActiveTab((prev) => prev + 1)}
-                className="px-4 py-1.5 text-xs uppercase tracking-wider font-semibold border"
-                style={{ backgroundColor: 'var(--text)', color: 'var(--bg)', borderColor: 'var(--text)' }}
+                className="uppercase tracking-wider font-semibold"
               >
                 Next Section →
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
+                variant="default"
+                size="sm"
                 onClick={onClose}
-                className="px-4 py-1.5 text-xs uppercase tracking-wider font-semibold border"
-                style={{ backgroundColor: 'var(--text)', color: 'var(--bg)', borderColor: 'var(--text)' }}
+                className="uppercase tracking-wider font-semibold"
               >
                 Got It — Close Guide
-              </button>
+              </Button>
             )}
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

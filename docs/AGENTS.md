@@ -12,6 +12,8 @@ This file is read at the start of every session. Follow it without being told.
    - `docs/design.md`: the section of the feature being built.
    - `docs/interface.md`: the screen or component being built.
    - `docs/ascii.md`: only when working on ASCII art.
+   - `docs/scale.md`: only the section of the current step (18 to 21).
+   - docs/layout.md: only when working on layout or page structure.
    Never read these three files fully.
 4. Say one line: `Resuming Step N: <name>.` Then start working. Do not ask what to do.
 
@@ -39,5 +41,7 @@ If I report a bug, fix it first, note it in `docs/progress.md`, then wait.
 - Advanced ideas are allowed only if written simply and explained in a comment.
 - Files under about 150 lines. Colors only from CSS variables (`docs/interface.md`).
 - No dead code, no fake data, no placeholder code, no features outside the current step.
-- Skip security hardening, caching, rate limits and tests until I ask.
+- Follow docs/scale.md in Steps 18 to 21. Before that, do not add them.
 - Never copy code, assets or branding from other apps.
+
+

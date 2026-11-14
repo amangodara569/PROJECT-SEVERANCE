@@ -3,7 +3,6 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import RightSidebar from './RightSidebar';
 
-// AppLayout defines the 3-column desktop and responsive mobile structure
 export default function AppLayout() {
   return (
     <div

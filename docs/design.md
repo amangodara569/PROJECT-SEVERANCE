@@ -141,4 +141,4 @@ Purpose: stop the app from being only negative. Show that people recover.
 
 ## 11. Out of scope for now
 
-Security hardening, caching, rate limits, email verification, notifications, payments, admin dashboard, native mobile apps. We will plan these later.
+See docs/scale.md. Email verification, notifications, payments, admin dashboard, native mobile apps. We will plan these later.

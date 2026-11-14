@@ -3,11 +3,11 @@
 > Rule: Tested = yes ONLY when user writes "tested" or "works" for that step. "continue" or "next" means move on but keep Tested = no.
 
 ## Status
-- Current step: 12b — ASCII interface polish
-- State: built, waiting for my test
-- Milestone: private beta after Step 13.
-- Last updated: 2026-11-04
-- Next action: Test ASCII art integration and Sever toggle recoloring across screens
+- Current step: 12c — Layout v2: fill the screen
+- State: in progress
+- Milestone: private beta after Step 21 (Phase 2 steps 14 to 16 come after the beta).
+- Last updated: 2026-11-14
+- Next action: Build AppShell, TopBar, LeftNav, RightRail, PostCard v2, layout pages, and seed data.
 
 ## Steps
 | # | Step | State | Main files | Tested |
@@ -23,23 +23,31 @@
 | 9 | Job model, Comeback page, Waffle Party screen | done | Job.js, Comeback.jsx, WaffleParty.jsx | yes |
 | 10 | Profile page (Outie/Innie view), status labels | done | users.js, Profile.jsx | yes |
 | 11 | Handbook, Wellness, empty states, 404, Guide | built, waiting for my test | Handbook.jsx, Wellness.jsx, SystemGuideModal.jsx | no |
-| 12 | Stabilize: JSON test-data store, login on, privacy check, hardening | done | store.js, seed.json, seed.js, privacyCheck.js | no |
+| 12 | Stabilize: JSON test-data store, login on, privacy check, hardening | done | store.js, seed.json, seed.js, privacyCheck.js | yes |
 | 12b | ASCII interface polish | built, waiting for my test | AsciiArt.jsx, AsciiCustom.jsx, pieces | no |
-| 13 | Review tool: admin queue for reported posts | built, waiting for my test | admin.js, ReviewQueue.jsx | no |
+| 12c | Layout v2: fill the screen | in progress | AppShell.jsx, TopBar.jsx, LeftNav.jsx, RightRail.jsx | no |
+| 13 | Review tool: admin queue for reported posts | done | admin.js, ReviewQueue.jsx | yes |
 | 14 | Rooms (chat, socket.io) | not started | socket.io, Room.jsx | no |
 | 15 | Refinement game | not started | Refinement.jsx | no |
 | 16 | Stories (optional, last) | not started | Stories.jsx | no |
-| 17 | Switch data layer to MongoDB Atlas (only server/db/store.js changes) | not started | store.js | no |
+| 17 | Switch data layer to MongoDB Atlas (only server/db/store.js changes) | done | store.js | yes |
+| 18 | App speed and resilience: indexes, pagination, votes collection, rate limits v2, cache, circuit breaker, logging | built, waiting for my test | env.js, limits.js, logger.js, breaker.js, cache.js, store.js | no |
+| 19 | Privacy and auth hardening: Innie author protection, cookie auth, account deletion | not started | User.js, auth.js, posts.js | no |
+| 20 | Gateway, load balancing, Docker, CI (local) | not started | nginx.conf, Dockerfile, docker-compose.yml | no |
+| 21 | Deploy and observe | not started | docs/deploy.md | no |
 
 ## Decisions
-- Data: JSON file store until Step 17.
-- ASCII art: self-hosted ascii-magic-art web component + 5 custom procedural pieces.
-- SystemGuideModal opens once per user via localStorage flag, re-openable via navbar [ ? ].
-- Swearing allowed; phone/email doxxing blocked via Break Room modal; 5 reports auto-hide.
-- Innie posts strictly strip real author from API responses; pseudonym handle only.
+- Dedicated votes collection with atomic score increments on target models; upvotes/downvotes arrays removed.
+- Redis optional with circuit breaker (opossum) and memory fallback (lru-cache).
+- Cursor pagination on posts feed (NEW uses createdAt+id, TOP uses score+id).
+- Personalization (myVote) batch-merged after cache; innie authors strictly protected and never cached.
+- Client code-split with React.lazy; search inputs debounced by 300ms; fonts self-hosted via @fontsource.
 
 ## Blockers
 - None.
 
 ## Latest test instructions
-- Open http://localhost:5173 to view ASCII pieces (counter, split-flap board, elevator 404, candle, sunrise, innie glyphs). Click Sever toggle to verify instant monochrome recoloring.
+- Run `npm run check:privacy --prefix PROJECT-SEVERANCE/server` to confirm all 7 privacy checks pass.
+- Run `node PROJECT-SEVERANCE/server/scripts/testRateLimits.js` to verify tiered 429 enforcement.
+- Check `http://localhost:5000/api/ready` for server health, cache, and breaker status.
+- Load `http://localhost:5173/` to test cursor pagination ("Load more transmissions") and optimistic votes.
