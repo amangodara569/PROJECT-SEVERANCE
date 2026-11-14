@@ -16,13 +16,14 @@ const Comeback = lazy(() => import('./pages/Comeback'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Handbook = lazy(() => import('./pages/Handbook'));
 const Wellness = lazy(() => import('./pages/Wellness'));
+const Saved = lazy(() => import('./pages/Saved'));
 const ReviewQueue = lazy(() => import('./pages/ReviewQueue'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function RouteLoading() {
   return (
     <div
-      className="min-h-[50vh] flex items-center justify-center font-mono text-xs text-muted-foreground"
+      className="min-h-[50vh] flex items-center justify-center font-mono text-xs text-[var(--color-text-muted)]"
     >
       Loading transmission...
     </div>
@@ -35,8 +36,7 @@ function AppRoutes() {
   if (loading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center font-mono text-sm"
-        style={{ backgroundColor: 'var(--bg)', color: 'var(--muted)' }}
+        className="min-h-screen flex items-center justify-center font-mono text-sm bg-[var(--color-bg-canvas)] text-[var(--color-text-muted)]"
       >
         Loading...
       </div>
@@ -53,8 +53,10 @@ function AppRoutes() {
               <Route path="/floors" element={<Floors />} />
               <Route path="/floors/:slug" element={<FloorPage />} />
               <Route path="/post/:id" element={<PostPage />} />
+              <Route path="/posts/:id" element={<PostPage />} />
               <Route path="/severed-floor" element={<SeveredFloor />} />
               <Route path="/comeback" element={<Comeback />} />
+              <Route path="/saved" element={<Saved />} />
               <Route path="/u/:username" element={<Profile />} />
               <Route path="/handbook" element={<Handbook />} />
               <Route path="/wellness" element={<Wellness />} />

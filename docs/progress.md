@@ -4,7 +4,7 @@
 
 ## Status
 - Current step: 12c — Layout v2: fill the screen
-- State: in progress
+- State: built, waiting for my test
 - Milestone: private beta after Step 21 (Phase 2 steps 14 to 16 come after the beta).
 - Last updated: 2026-11-14
 - Next action: Build AppShell, TopBar, LeftNav, RightRail, PostCard v2, layout pages, and seed data.
@@ -25,7 +25,7 @@
 | 11 | Handbook, Wellness, empty states, 404, Guide | built, waiting for my test | Handbook.jsx, Wellness.jsx, SystemGuideModal.jsx | no |
 | 12 | Stabilize: JSON test-data store, login on, privacy check, hardening | done | store.js, seed.json, seed.js, privacyCheck.js | yes |
 | 12b | ASCII interface polish | built, waiting for my test | AsciiArt.jsx, AsciiCustom.jsx, pieces | no |
-| 12c | Layout v2: fill the screen | in progress | AppShell.jsx, TopBar.jsx, LeftNav.jsx, RightRail.jsx | no |
+| 12c | Layout v2: fill the screen | built, waiting for my test | AppShell.jsx, TopBar.jsx, LeftNav.jsx, RightRail.jsx | no |
 | 13 | Review tool: admin queue for reported posts | done | admin.js, ReviewQueue.jsx | yes |
 | 14 | Rooms (chat, socket.io) | not started | socket.io, Room.jsx | no |
 | 15 | Refinement game | not started | Refinement.jsx | no |
@@ -51,3 +51,4 @@
 - Run `node PROJECT-SEVERANCE/server/scripts/testRateLimits.js` to verify tiered 429 enforcement.
 - Check `http://localhost:5000/api/ready` for server health, cache, and breaker status.
 - Load `http://localhost:5173/` to test cursor pagination ("Load more transmissions") and optimistic votes.
+

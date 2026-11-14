@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 export default function PostPage() {
   const { id } = useParams();
@@ -29,6 +30,15 @@ export default function PostPage() {
       ]);
       setPost(postRes.data.post);
       setComments(commRes.data.comments || []);
+
+      if (postRes.data.post) {
+        const p = postRes.data.post;
+        try {
+          const stored = JSON.parse(localStorage.getItem('linkedout:recent') || '[]');
+          const updated = [{ title: p.title, url: `/post/${p._id}` }, ...stored.filter((r) => r.url !== `/post/${p._id}`)].slice(0, 5);
+          localStorage.setItem('linkedout:recent', JSON.stringify(updated));
+        } catch {}
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -55,25 +65,26 @@ export default function PostPage() {
       await api.delete(`/posts/${postId}`);
       navigate('/');
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.response?.data?.error || 'Failed to delete');
+      alert(err.response?.data?.error || 'Failed to delete');
     }
   };
 
-  const handleAddComment = async (parentId = null, text = null) => {
-    const body = text || commentText;
-    if (!body?.trim()) return;
+  const handleCreateComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim() || submitting) return;
     setSubmitting(true);
+
     try {
       const res = await api.post(`/posts/${id}/comments`, {
-        body,
-        parentId,
+        body: commentText.trim(),
         isInnie
       });
+
       setComments((prev) => [...prev, res.data.comment]);
-      if (!parentId) setCommentText('');
+      setCommentText('');
       setPost((prev) => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }));
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.response?.data?.error || 'Failed to add comment');
+      alert(err.response?.data?.error || 'Failed to publish comment');
     } finally {
       setSubmitting(false);
     }
@@ -92,83 +103,116 @@ export default function PostPage() {
     }
   };
 
-  if (loading) return <div className="font-mono text-xs text-[var(--muted)] py-4 text-center">Loading transmission record...</div>;
+  const handleCommentReply = async (parentId, replyText) => {
+    try {
+      const res = await api.post(`/posts/${id}/comments`, {
+        body: replyText,
+        parent: parentId,
+        isInnie
+      });
+      setComments((prev) => [...prev, res.data.comment]);
+      setPost((prev) => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to post reply');
+    }
+  };
+
+  const handleCommentDelete = async (commentId) => {
+    if (!window.confirm('Delete this comment?')) return;
+    try {
+      await api.delete(`/comments/${commentId}`);
+      setComments((prev) => prev.filter((c) => c._id !== commentId));
+      setPost((prev) => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 1) - 1) }));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete comment');
+    }
+  };
+
+  if (loading) return <div className="font-mono text-xs text-[var(--color-text-muted)] py-8 text-center">Loading transmission details...</div>;
   if (!post) {
     return (
-      <Card className="p-8 text-center font-mono text-xs space-y-3">
-        <p className="text-[var(--muted)]">This post does not exist or has been removed.</p>
-        <Link to="/" className="inline-block mt-2">
-          <Button variant="outline" size="sm">
-            Back to feed
-          </Button>
-        </Link>
+      <Card className="p-8 text-center font-mono text-xs space-y-3 bg-[var(--color-bg-card)] border border-[var(--color-border)]">
+        <p className="text-[var(--color-text-muted)]">Transmission record not found or was severed.</p>
+        <Link to="/" className="underline text-[var(--color-primary)]">Return to Feed</Link>
       </Card>
     );
   }
 
   const rootComments = comments.filter((c) => !c.parent);
-  const repliesByParent = comments.reduce((acc, c) => {
-    if (c.parent) {
-      acc[c.parent] = acc[c.parent] || [];
-      acc[c.parent].push(c);
-    }
-    return acc;
-  }, {});
 
   return (
-    <div className="space-y-4">
-      <PostCard post={post} onVote={handlePostVote} onDelete={handlePostDelete} />
-
-      <Card className="p-4 space-y-3 font-mono text-xs">
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleAddComment(); }}
-          className="space-y-3"
+    <div className="space-y-4 max-w-3xl mx-auto font-mono text-xs">
+      {/* Back button */}
+      <div>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
         >
-          <div className="flex items-center justify-between">
-            <span className="font-bold uppercase tracking-wider text-[var(--text)]">
-              {isInnie ? 'Add to thread' : 'RECORD TRANSMISSION RESPONSE'}
-            </span>
-            <span className="text-[11px] text-[var(--muted)]">
-              Responding as: <strong className="text-[var(--text)]">{isInnie ? user?.innieHandle : `@${user?.username}`}</strong>
-            </span>
-          </div>
+          <ArrowLeft size={13} />
+          <span>Back to Feed</span>
+        </Link>
+      </div>
+
+      {/* Primary Post Card */}
+      <PostCard
+        post={post}
+        onVote={handlePostVote}
+        onDelete={handlePostDelete}
+        density="comfortable"
+      />
+
+      {/* Comment Composer Box */}
+      <Card className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] space-y-3 shadow-xs">
+        <div className="flex items-center justify-between text-[11px] text-[var(--color-text-muted)]">
+          <span>Leave a reply / reflection</span>
+          <span>
+            Replying as <strong className="text-[var(--color-text-primary)]">{isInnie ? user?.innieHandle : `@${user?.username}`}</strong>
+          </span>
+        </div>
+
+        <form onSubmit={handleCreateComment} className="space-y-2.5">
           <Textarea
             required
             rows={3}
-            placeholder={isInnie ? "Reply to thread..." : "Record telemetry response..."}
+            placeholder="Share professional reflection or context (no personal contact data)..."
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             className="text-xs"
           />
+
           <div className="flex justify-end">
             <Button
               type="submit"
               disabled={submitting}
               variant="default"
               size="sm"
+              className="uppercase font-semibold text-xs"
             >
-              {submitting ? 'Transmitting...' : isInnie ? 'Send Reply' : 'DISPATCH RESPONSE'}
+              {submitting ? 'Submitting...' : 'Comment'}
             </Button>
           </div>
         </form>
       </Card>
 
+      {/* Comments List */}
       <div className="space-y-3 pt-2">
-        <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--muted)]">
-          {isInnie ? `# Thread Replies (${comments.length})` : `TRANSMISSION THREAD (${comments.length})`}
+        <h3 className="font-bold uppercase tracking-wider text-[11px] text-[var(--color-text-muted)]">
+          // RESPONSES ({comments.length})
         </h3>
+
         {rootComments.length === 0 ? (
-          <Card className="p-6 text-center font-mono text-xs text-[var(--muted)]">
-            <p className="text-sm">No comments recorded yet. Initiate the response log.</p>
+          <Card className="p-8 text-center text-[var(--color-text-muted)] bg-[var(--color-bg-card)] border border-[var(--color-border)]">
+            No reflections added yet. Speak first.
           </Card>
         ) : (
-          rootComments.map((root) => (
+          rootComments.map((comment) => (
             <CommentItem
-              key={root._id}
-              comment={root}
-              replies={repliesByParent[root._id] || []}
+              key={comment._id}
+              comment={comment}
+              allComments={comments}
               onVote={handleCommentVote}
-              onAddReply={(parentId, text) => handleAddComment(parentId, text)}
+              onReply={handleCommentReply}
+              onDelete={handleCommentDelete}
             />
           ))
         )}

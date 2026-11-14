@@ -89,6 +89,9 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/layoffs', require('./routes/layoffs'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/stats', require('./routes/stats'));
+app.use('/api/search', require('./routes/search'));
+app.use('/api/me', require('./routes/me'));
 
 // 404 handler for unmatched routes
 app.use((req, res) => {
@@ -153,3 +156,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+

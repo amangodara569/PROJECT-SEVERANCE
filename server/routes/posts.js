@@ -54,6 +54,7 @@ const sanitizePostPublic = (post) => {
     commentCount: post.commentCount || 0,
     reportCount: post.reportCount || 0,
     score: typeof post.score === 'number' ? post.score : 0,
+    pinned: Boolean(post.pinned),
     createdAt: post.createdAt
   };
 
@@ -89,6 +90,7 @@ router.get('/', async (req, res) => {
   try {
     const { floor, cursor } = req.query;
     const sort = req.query.sort === 'top' ? 'top' : 'new';
+    const timeFilter = (req.query.time || req.query.t || 'all').toLowerCase();
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 50);
 
     let floorId = 'all';
@@ -98,7 +100,7 @@ router.get('/', async (req, res) => {
     }
 
     const floorVer = cache.getFloorVersion(floorId);
-    const cacheKey = `feed:${floorId}:${sort}:${floorVer}:${cursor || 'start'}:${limit}`;
+    const cacheKey = `feed:${floorId}:${sort}:${timeFilter}:${floorVer}:${cursor || 'start'}:${limit}`;
 
     // Note: Cached public feed allows score changes up to 20 seconds old for high throughput
     const pageData = await cache.wrap(cacheKey, 20, async () => {
@@ -108,10 +110,26 @@ router.get('/', async (req, res) => {
         posts = posts.filter((p) => p.floor && p.floor.toString() === floorId.toString());
       }
 
+      if (timeFilter !== 'all') {
+        const now = Date.now();
+        const windowMs = timeFilter === 'today' || timeFilter === 'day'
+          ? 24 * 60 * 60 * 1000
+          : timeFilter === 'week'
+            ? 7 * 24 * 60 * 60 * 1000
+            : 30 * 24 * 60 * 60 * 1000;
+        posts = posts.filter((p) => (now - new Date(p.createdAt).getTime()) <= windowMs);
+      }
+
       if (sort === 'top') {
         posts.sort((a, b) => (b.score || 0) - (a.score || 0) || b._id.localeCompare(a._id));
       } else {
-        posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt) || b._id.localeCompare(a._id));
+        // Pinned posts come first in the All tab
+        posts.sort((a, b) => {
+          if (floorId === 'all' && Boolean(b.pinned) !== Boolean(a.pinned)) {
+            return b.pinned ? 1 : -1;
+          }
+          return new Date(b.createdAt) - new Date(a.createdAt) || b._id.localeCompare(a._id);
+        });
       }
 
       const decoded = decodeCursor(cursor);
@@ -146,6 +164,12 @@ router.get('/', async (req, res) => {
     const postIds = pageData.items.map((p) => p._id);
     const votesMap = store.getUserVotesMap(currentUserId, 'post', postIds);
 
+    let savedIds = [];
+    if (currentUserId) {
+      const u = store.findById('users', currentUserId);
+      if (u && Array.isArray(u.savedPosts)) savedIds = u.savedPosts;
+    }
+
     const enrichedItems = pageData.items.map((post) => {
       const myVote = votesMap[post._id] || 0;
       const isOwner = currentUserId && !post.isInnie && post.author && post.author._id === currentUserId;
@@ -153,7 +177,8 @@ router.get('/', async (req, res) => {
         ...post,
         myVote,
         userVote: myVote,
-        isOwner: Boolean(isOwner)
+        isOwner: Boolean(isOwner),
+        isSaved: savedIds.includes(post._id)
       };
     });
 
@@ -209,6 +234,50 @@ router.post('/', auth, (req, res) => {
     res.status(201).json({ post: { ...sanitized, myVote: 0, userVote: 0, isOwner: !isInnie } });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error creating post' });
+  }
+});
+
+// GET /api/posts/trending - Top 3 posts of the last 24 hours (privacy strictly preserved)
+router.get('/trending', async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 3, 1), 10);
+    const now = Date.now();
+    const windowMs = 24 * 60 * 60 * 1000;
+    const posts = store.getAll('posts')
+      .filter((p) => !p.hidden && (now - new Date(p.createdAt).getTime()) <= windowMs)
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, limit)
+      .map(sanitizePostPublic);
+
+    res.json({ posts });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch trending posts' });
+  }
+});
+
+// POST /api/posts/:id/save - Toggle bookmark save on a post
+router.post('/:id/save', auth, (req, res) => {
+  try {
+    const user = store.findById('users', req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const postId = req.params.id;
+    const saved = Array.isArray(user.savedPosts) ? [...user.savedPosts] : [];
+    const index = saved.indexOf(postId);
+    let isSaved = false;
+
+    if (index > -1) {
+      saved.splice(index, 1);
+      isSaved = false;
+    } else {
+      saved.push(postId);
+      isSaved = true;
+    }
+
+    store.update('users', req.user.id, { savedPosts: saved });
+    res.json({ isSaved, savedCount: saved.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to toggle save' });
   }
 });
 

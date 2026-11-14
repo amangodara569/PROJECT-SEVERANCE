@@ -12,13 +12,26 @@ router.get('/:username', (req, res) => {
 
     if (!user) return res.status(404).json({ error: 'User profile not found' });
 
-    // Strict Privacy: Never return email, passwordHash, or innieHandle
+    // Strict Privacy: Never return email, passwordHash, or innieHandle.
+    // Stats count Outie content only so Innie activity can never be linked to the profile.
+    const outiePosts = store.getAll('posts').filter((p) => p.author && p.author.toString() === user._id.toString() && !p.isInnie && !p.hidden);
+    const outieComments = store.getAll('comments').filter((c) => c.author && c.author.toString() === user._id.toString() && !c.isInnie && !c.hidden);
+    const postCount = outiePosts.length;
+    const commentCount = outieComments.length;
+    const floorCount = Array.isArray(user.joinedFloors) ? user.joinedFloors.length : 0;
+    const totalScore = outiePosts.reduce((acc, p) => acc + (typeof p.score === 'number' ? p.score : 0), 0) +
+                       outieComments.reduce((acc, c) => acc + (typeof c.score === 'number' ? c.score : 0), 0);
+
     const publicUser = {
       _id: user._id,
       username: user.username,
       headline: user.headline || '',
       status: user.status || 'Employed',
       bio: user.bio || '',
+      postCount,
+      commentCount,
+      floorCount,
+      score: totalScore,
       createdAt: user.createdAt
     };
 
@@ -91,3 +104,4 @@ router.put('/profile', auth, (req, res) => {
 });
 
 module.exports = router;
+

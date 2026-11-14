@@ -28,35 +28,69 @@ const getUserIdFromHeader = (req) => {
 };
 
 // Formats floor object for privacy: returns memberCount, never member IDs
-const sanitizeFloorPublic = (floor) => {
+const sanitizeFloorPublic = (floor, postsTodayMap = {}) => {
   const members = floor.members || [];
   return {
     _id: floor._id,
     name: floor.name,
     slug: floor.slug,
     description: floor.description || '',
+    category: floor.category || 'Tech',
+    postsToday: postsTodayMap[floor._id] || 0,
     memberCount: members.length,
     memberIds: members, // used internally to compute isMember after cache
     createdAt: floor.createdAt
   };
 };
 
-// GET /api/floors - List floors with 60s cache
+// GET /api/floors - List floors with sorting, category filtering, and postsToday
 router.get('/', async (req, res) => {
   try {
-    const { q } = req.query;
+    const { q, category, sort, limit } = req.query;
 
-    const baseFloors = await cache.wrap('floors:list', 60, async () => {
-      const all = store.getAll('floors');
-      return all
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .map(sanitizeFloorPublic);
+    const baseFloors = await cache.wrap('floors:list:v2', 30, async () => {
+      const all = store.getAll('floors') || [];
+      const allPosts = store.getAll('posts') || [];
+      const now = Date.now();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+
+      // Calculate postsToday per floor
+      const postsTodayMap = {};
+      for (const p of allPosts) {
+        if (!p.hidden && p.floor && (now - new Date(p.createdAt).getTime()) <= oneDayMs) {
+          const fid = p.floor.toString();
+          postsTodayMap[fid] = (postsTodayMap[fid] || 0) + 1;
+        }
+      }
+
+      return all.map((f) => sanitizeFloorPublic(f, postsTodayMap));
     });
 
-    let filtered = baseFloors;
-    if (q) {
+    let filtered = [...baseFloors];
+
+    if (category && category.trim()) {
+      const catLower = category.trim().toLowerCase();
+      filtered = filtered.filter((f) => f.category && f.category.toLowerCase() === catLower);
+    }
+
+    if (q && q.trim()) {
       const lower = q.trim().toLowerCase();
-      filtered = baseFloors.filter((f) => f.name.toLowerCase().includes(lower));
+      filtered = filtered.filter((f) => f.name.toLowerCase().includes(lower) || (f.description && f.description.toLowerCase().includes(lower)));
+    }
+
+    if (sort === 'active') {
+      filtered.sort((a, b) => (b.postsToday || 0) - (a.postsToday || 0) || (b.memberCount || 0) - (a.memberCount || 0));
+    } else if (sort === 'members') {
+      filtered.sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
+    } else {
+      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    if (limit) {
+      const max = parseInt(limit, 10);
+      if (!isNaN(max) && max > 0) {
+        filtered = filtered.slice(0, max);
+      }
     }
 
     const currentUserId = getUserIdFromHeader(req);
