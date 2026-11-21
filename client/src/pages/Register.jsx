@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import AsciiCustom from '../components/AsciiCustom';
-import linkedOutLogo from '../ascii/pieces/linked-out-logo';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
+// Registration screen with centered form on --surface and Lumon footer
 export default function Register() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -23,91 +20,68 @@ export default function Register() {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
-
     try {
       await register({ username, email, password, headline });
       navigate('/');
     } catch (err) {
-      const message = err.response?.data?.error || 'Registration failed. Please try again.';
-      setError(message);
+      setError(err.response?.data?.error || 'Registration failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center p-4 bg-[var(--color-bg-canvas)] text-[var(--color-text-primary)]"
-    >
-      <Card
-        className="w-full max-w-sm p-6 bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-xl"
-      >
-        <div className="mb-4 text-center">
-          <div className="flex justify-center mb-2">
-            <AsciiCustom make={linkedOutLogo} size={8} />
-          </div>
-          <h1 className="text-xl font-bold tracking-widest uppercase text-[var(--color-text-primary)] font-mono">LINKED OUT</h1>
-          <p className="text-xs mt-1 text-[var(--color-text-muted)]">
-            Create your severed profile
-          </p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[var(--bg)] text-[var(--text)]">
+      <div className="w-full max-w-sm p-6 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)]">
+        <div className="mb-6 text-center space-y-1">
+          <h1 className="text-xl font-semibold text-[var(--text)] font-head">Linked Out</h1>
+          <p className="text-xs text-[var(--muted)]">Create your account</p>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-4 py-2">
-            <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
-          </Alert>
+          <div className="mb-4 p-2.5 text-xs text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)]">
+            {error}
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1 font-mono text-[var(--color-text-muted)]">
-              Username
-            </label>
+            <label className="block text-xs text-[var(--muted)] mb-1">Username</label>
             <Input
               type="text"
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full text-xs font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1 font-mono text-[var(--color-text-muted)]">
-              Email
-            </label>
+            <label className="block text-xs text-[var(--muted)] mb-1">Email</label>
             <Input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full text-xs font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1 font-mono text-[var(--color-text-muted)]">
-              Password
-            </label>
+            <label className="block text-xs text-[var(--muted)] mb-1">Password</label>
             <Input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full text-xs font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1 font-mono text-[var(--color-text-muted)]">
-              Headline (Optional)
-            </label>
+            <label className="block text-xs text-[var(--muted)] mb-1">Headline (optional)</label>
             <Input
               type="text"
-              placeholder="e.g. Frontend Dev, ex-Macrodata"
+              placeholder="e.g. Frontend developer"
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
-              className="w-full text-xs font-mono"
             />
           </div>
 
@@ -115,22 +89,22 @@ export default function Register() {
             type="submit"
             disabled={isSubmitting}
             variant="default"
-            size="default"
-            className="w-full font-mono uppercase tracking-wider font-semibold mt-2"
+            size="md"
+            className="w-full mt-2"
           >
             {isSubmitting ? 'Registering...' : 'Register'}
           </Button>
         </form>
 
         <div className="mt-4 text-center text-xs">
-          <span className="text-[var(--color-text-muted)]">Already have an account? </span>
-          <Link to="/login" className="underline font-mono text-[var(--color-primary)] hover:opacity-80">
-            Sign In
+          <span className="text-[var(--muted)]">Already have an account? </span>
+          <Link to="/login" className="text-[var(--accent)] hover:underline">
+            Sign in
           </Link>
         </div>
-      </Card>
+      </div>
 
-      <footer className="mt-8 text-xs font-mono text-[var(--color-text-muted)]">
+      <footer className="mt-8 text-xs text-[var(--muted)]">
         Please enjoy all facts equally.
       </footer>
     </div>

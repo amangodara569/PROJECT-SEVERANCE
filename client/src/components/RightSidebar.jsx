@@ -1,81 +1,41 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
-import { useMode } from '../context/ModeContext';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
+// Secondary right rail with hairline divider and theme v2 tokens
 export default function RightSidebar() {
-  const [severedCount, setSeveredCount] = useState('--');
+  const [stats, setStats] = useState({ severedThisMonth: 0 });
   const [floors, setFloors] = useState([]);
-  const { isInnie } = useMode();
 
   useEffect(() => {
-    api.get('/layoffs')
-      .then((res) => setSeveredCount(res.data.severedThisMonth?.toLocaleString() || '0'))
-      .catch(() => {});
-
-    api.get('/floors')
-      .then((res) => setFloors((res.data.floors || []).slice(0, 4)))
-      .catch(() => {});
+    api.get('/stats/overview').then((res) => setStats(res.data)).catch(() => {});
+    api.get('/floors').then((res) => setFloors((res.data.floors || []).slice(0, 4))).catch(() => {});
   }, []);
 
   return (
-    <aside
-      className={`hidden lg:flex flex-col w-64 shrink-0 border-l min-h-[calc(100vh-53px)] p-4 gap-4 font-mono text-xs transition-colors ${
-        isInnie
-          ? 'bg-[#ffffff] border-[#e6e6e6]'
-          : 'bg-[#000000] border-[#222222]'
-      }`}
-    >
-      {/* Severed this month box */}
-      <Card className="p-3.5 space-y-1">
-        <h3 className="uppercase tracking-[0.15em] text-[10px] font-bold text-[var(--muted)]">
-          {isInnie ? 'SEVERED WORKFORCE (MONTH)' : 'DISPLACED OPERATORS'}
-        </h3>
-        <div className={`text-2xl font-black tracking-tight ${isInnie ? 'text-[#4a154b]' : 'text-[#FFC000]'}`}>
-          {severedCount}
+    <aside className="w-64 p-4 border-l border-[var(--border)] bg-[var(--bg)] text-xs space-y-6 hidden lg:block">
+      <div className="space-y-1">
+        <div className="text-[42px] leading-tight font-semibold tabular-nums text-[var(--text)] font-head">
+          {stats.severedThisMonth.toLocaleString()}
         </div>
-        <p className="text-[10px] text-[var(--muted)]">
-          Verified headcount reductions this calendar cycle.
-        </p>
-      </Card>
+        <p className="text-xs text-[var(--muted)]">Severed this month</p>
+      </div>
 
-      {/* Trending floors box */}
-      <Card className="p-3.5 space-y-2.5">
-        <h3 className="uppercase tracking-[0.15em] text-[10px] font-bold text-[var(--muted)] flex items-center justify-between">
-          <span>{isInnie ? 'ACTIVE FLOORS' : 'ACTIVE SECTORS'}</span>
-          <span className="text-[10px] font-normal">{floors.length}</span>
-        </h3>
-
-        {floors.length === 0 ? (
-          <p className="text-[11px] text-[var(--muted)]">
-            Floors loading...
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {floors.map((f) => (
-              <div key={f._id} className="flex justify-between items-center text-[11px]">
-                <Link to={`/floors/${f.slug}`} className="hover:underline font-semibold text-[var(--text)] truncate max-w-[140px]">
-                  {isInnie ? `# ${f.slug}` : f.name.toUpperCase()}
-                </Link>
-                <Badge variant={isInnie ? 'default' : 'outline'} className="text-[10px] px-1.5 py-0">
-                  {f.memberCount || 0}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <Link
-          to="/floors"
-          className={`inline-block pt-1 text-[11px] font-semibold hover:underline ${
-            isInnie ? 'text-[#1264a3]' : 'text-[#FFC000]'
-          }`}
-        >
-          {isInnie ? 'Browse all channels →' : 'EXPLORE ALL SECTORS →'}
-        </Link>
-      </Card>
+      <div className="space-y-2 pt-4 border-t border-[var(--border)]">
+        <h3 className="text-xs font-semibold text-[var(--text)]">Active floors</h3>
+        <div className="space-y-1">
+          {floors.map((f) => (
+            <Link
+              key={f._id}
+              to={`/floors/${f.slug}`}
+              className="flex items-center justify-between p-1.5 hover:bg-[var(--hover)] rounded-[var(--radius-sm)] transition-colors"
+            >
+              <span className="font-medium text-[var(--text)]">#{f.name}</span>
+              <span className="text-[10px] text-[var(--muted)] tabular-nums">{f.memberCount}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
     </aside>
   );
 }

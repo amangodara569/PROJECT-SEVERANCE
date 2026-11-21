@@ -1,18 +1,11 @@
 import React from 'react';
 
+// Alert message box using Theme v2 surface and border
 export function Alert({ children, variant = 'default', className = '', ...props }) {
-  let variantStyles = 'bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--text)]';
-  if (variant === 'destructive') {
-    variantStyles = 'bg-[var(--destructive)]/10 border-[var(--destructive)]/40 text-[var(--destructive)]';
-  } else if (variant === 'gold' || variant === 'warning') {
-    variantStyles = 'bg-[var(--accent-gold)]/10 border-[var(--accent-gold)]/40 text-[var(--text)]';
-  }
-
   return (
     <div
       role="alert"
-      style={{ borderRadius: 'var(--radius-card)' }}
-      className={`border p-4 text-sm ${variantStyles} ${className}`}
+      className={`border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] rounded-[var(--radius)] p-3 text-sm ${className}`}
       {...props}
     >
       {children}
@@ -22,7 +15,7 @@ export function Alert({ children, variant = 'default', className = '', ...props 
 
 export function AlertDescription({ children, className = '', ...props }) {
   return (
-    <div className={`text-sm ${className}`} {...props}>
+    <div className={`text-xs text-[var(--muted)] ${className}`} {...props}>
       {children}
     </div>
   );

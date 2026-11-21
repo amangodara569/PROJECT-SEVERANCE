@@ -1,14 +1,10 @@
 import React from 'react';
 
+// Card container using Theme v2 surface and hairline border
 export function Card({ children, className = '', ...props }) {
   return (
     <div
-      style={{
-        borderRadius: 'var(--radius-card)',
-        backgroundColor: 'var(--surface)',
-        borderColor: 'var(--border)'
-      }}
-      className={`border text-[var(--text)] transition-all ${className}`}
+      className={`border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] rounded-[var(--radius)] ${className}`}
       {...props}
     >
       {children}
@@ -26,7 +22,7 @@ export function CardHeader({ children, className = '', ...props }) {
 
 export function CardTitle({ children, className = '', ...props }) {
   return (
-    <h3 className={`text-base font-bold text-[var(--text)] ${className}`} {...props}>
+    <h3 className={`text-base font-semibold text-[var(--text)] ${className}`} {...props}>
       {children}
     </h3>
   );

@@ -1,22 +1,22 @@
 import React from 'react';
 
-export function Badge({ children, variant = 'default', className = '', ...props }) {
-  let variantStyle = 'bg-[var(--secondary)] text-[var(--text)] border border-[var(--border)]';
+// Badge pill / chip using Theme v2 radius and variables
+export function Badge({ children, variant = 'default', size = 'md', className = '', ...props }) {
+  let variantStyle = 'bg-[var(--accent-soft)] text-[var(--text)] border border-[var(--border)]';
 
-  if (variant === 'gold' || variant === 'primary') {
-    variantStyle = 'bg-[var(--primary)] text-[var(--primary-fg)] font-bold';
-  } else if (variant === 'cyan' || variant === 'accent') {
-    variantStyle = 'bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/30';
+  if (variant === 'primary' || variant === 'accent') {
+    variantStyle = 'bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30';
   } else if (variant === 'outline') {
     variantStyle = 'bg-transparent text-[var(--muted)] border border-[var(--border)]';
   } else if (variant === 'destructive') {
-    variantStyle = 'bg-[var(--destructive)]/15 text-[var(--destructive)] border border-[var(--destructive)]/30';
+    variantStyle = 'bg-transparent text-[var(--muted)] border border-[var(--border)]';
   }
+
+  const sizeClass = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs';
 
   return (
     <span
-      style={{ borderRadius: 'var(--radius-badge)' }}
-      className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium tracking-wide uppercase ${variantStyle} ${className}`}
+      className={`inline-flex items-center gap-1 font-medium rounded-[var(--radius-sm)] ${sizeClass} ${variantStyle} ${className}`}
       {...props}
     >
       {children}

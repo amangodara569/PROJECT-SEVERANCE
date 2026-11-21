@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import AsciiCustom from '../components/AsciiCustom';
-import linkedOutLogo from '../ascii/pieces/linked-out-logo';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
+// Login screen with centered form on --surface and Lumon footer
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,65 +18,48 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
-
     try {
       await login({ email, password });
       navigate('/');
     } catch (err) {
-      const message = err.response?.data?.error || 'Failed to sign in. Please try again.';
-      setError(message);
+      setError(err.response?.data?.error || 'Failed to sign in. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center p-4 bg-[var(--color-bg-canvas)] text-[var(--color-text-primary)]"
-    >
-      <Card
-        className="w-full max-w-sm p-6 bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-xl"
-      >
-        <div className="mb-4 text-center">
-          <div className="flex justify-center mb-2">
-            <AsciiCustom make={linkedOutLogo} size={8} />
-          </div>
-          <h1 className="text-xl font-bold tracking-widest uppercase text-[var(--color-text-primary)] font-mono">LINKED OUT</h1>
-          <p className="text-xs mt-1 text-[var(--color-text-muted)]">
-            Sign in to continue
-          </p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[var(--bg)] text-[var(--text)]">
+      <div className="w-full max-w-sm p-6 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)]">
+        <div className="mb-6 text-center space-y-1">
+          <h1 className="text-xl font-semibold text-[var(--text)] font-head">Linked Out</h1>
+          <p className="text-xs text-[var(--muted)]">Sign in to your account</p>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-4 py-2">
-            <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
-          </Alert>
+          <div className="mb-4 p-2.5 text-xs text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)]">
+            {error}
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1 font-mono text-[var(--color-text-muted)]">
-              Email
-            </label>
+            <label className="block text-xs text-[var(--muted)] mb-1">Email</label>
             <Input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full text-xs font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1 font-mono text-[var(--color-text-muted)]">
-              Password
-            </label>
+            <label className="block text-xs text-[var(--muted)] mb-1">Password</label>
             <Input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full text-xs font-mono"
             />
           </div>
 
@@ -87,22 +67,22 @@ export default function Login() {
             type="submit"
             disabled={isSubmitting}
             variant="default"
-            size="default"
-            className="w-full font-mono uppercase tracking-wider font-semibold mt-2"
+            size="md"
+            className="w-full"
           >
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
 
         <div className="mt-4 text-center text-xs">
-          <span className="text-[var(--color-text-muted)]">Need an account? </span>
-          <Link to="/register" className="underline font-mono text-[var(--color-primary)] hover:opacity-80">
+          <span className="text-[var(--muted)]">Need an account? </span>
+          <Link to="/register" className="text-[var(--accent)] hover:underline">
             Register
           </Link>
         </div>
-      </Card>
+      </div>
 
-      <footer className="mt-8 text-xs font-mono text-[var(--color-text-muted)]">
+      <footer className="mt-8 text-xs text-[var(--muted)]">
         Please enjoy all facts equally.
       </footer>
     </div>

@@ -1,69 +1,56 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Check, Plus, MessageSquare, Info, TrendingDown } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import api from '../api/api';
 import PostComposer from '../components/PostComposer';
 import PostCard from '../components/PostCard';
-import LayoffRow from '../components/LayoffRow';
-import AsciiArt from '../components/AsciiArt';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+// Floor detail page with plain header section, composer, sort, and post rows
 export default function FloorPage() {
   const { slug } = useParams();
   const [floor, setFloor] = useState(null);
   const [posts, setPosts] = useState([]);
   const [layoffs, setLayoffs] = useState([]);
-  const [activeTab, setActiveTab] = useState('posts'); // 'posts' | 'about' | 'layoffs'
+  const [hiring, setHiring] = useState([]);
+  const [sort, setSort] = useState('new');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const loadData = async () => {
-    try {
-      const [floorRes, layoffsRes] = await Promise.all([
-        api.get(`/floors/${slug}`),
-        api.get('/layoffs')
-      ]);
-
-      const f = floorRes.data.floor;
-      setFloor(f);
-
-      const postsRes = await api.get(`/posts?floor=${f._id}`);
-      setPosts(postsRes.data.posts || postsRes.data.items || []);
-
-      // Filter layoffs where company matches floor name
-      const allLayoffs = layoffsRes.data.layoffs || [];
-      const matched = allLayoffs.filter(
-        (l) => l.company && l.company.toLowerCase() === f.name.toLowerCase()
-      );
-      setLayoffs(matched);
-
-      // Save to recent in localStorage
-      try {
-        const stored = JSON.parse(localStorage.getItem('linkedout:recent') || '[]');
-        const updated = [{ title: `#${f.name}`, url: `/floors/${f.slug}` }, ...stored.filter((r) => r.url !== `/floors/${f.slug}`)].slice(0, 5);
-        localStorage.setItem('linkedout:recent', JSON.stringify(updated));
-      } catch {}
-    } catch (err) {
-      setError(err.response?.data?.error || 'Floor not found');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    loadData();
-  }, [slug]);
+    const loadFloor = async () => {
+      try {
+        const [fRes, lRes, jRes] = await Promise.all([
+          api.get(`/floors/${slug}`),
+          api.get('/layoffs'),
+          api.get('/jobs')
+        ]);
+        const f = fRes.data.floor;
+        setFloor(f);
+
+        const pRes = await api.get(`/posts?floor=${f._id}&sort=${sort}`);
+        setPosts(pRes.data.posts || pRes.data.items || []);
+
+        const matchedLayoffs = (lRes.data.layoffs || []).filter(
+          (l) => l.company && l.company.toLowerCase() === f.name.toLowerCase()
+        );
+        setLayoffs(matchedLayoffs);
+
+        const matchedJobs = (jRes.data.jobs || []).filter(
+          (j) => j.company && j.company.toLowerCase() === f.name.toLowerCase()
+        );
+        setHiring(matchedJobs);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadFloor();
+  }, [slug, sort]);
 
   const handleToggleJoin = async () => {
     try {
       const res = await api.post(`/floors/${slug}/join`);
-      setFloor((prev) => ({
-        ...prev,
-        isMember: res.data.joined,
-        memberCount: res.data.memberCount
-      }));
+      setFloor((prev) => ({ ...prev, isMember: res.data.joined, memberCount: res.data.memberCount }));
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to update membership');
     }
@@ -72,191 +59,105 @@ export default function FloorPage() {
   const handleVote = async (postId, value) => {
     try {
       const res = await api.post(`/posts/${postId}/vote`, { value });
-      setPosts((prev) =>
-        prev.map((p) => (p._id === postId ? { ...p, score: res.data.score, userVote: res.data.userVote } : p))
-      );
+      setPosts((prev) => prev.map((p) => (p._id === postId ? { ...p, score: res.data.score, userVote: res.data.userVote } : p)));
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (loading) return <div className="font-mono text-xs text-[var(--color-text-muted)] py-8 text-center">Loading floor telemetry...</div>;
-  if (error || !floor) {
-    return (
-      <Card className="p-8 text-center font-mono text-xs space-y-3 bg-[var(--color-bg-card)] border border-[var(--color-border)]">
-        <p className="text-[var(--color-text-muted)]">{error || 'Floor does not exist.'}</p>
-        <Link to="/floors" className="underline text-[var(--color-primary)]">Return to Floors directory</Link>
-      </Card>
-    );
-  }
+  if (loading) return <div className="py-8 text-center text-xs text-[var(--muted)]">Loading floor...</div>;
+  if (!floor) return <div className="py-8 text-center text-xs text-[var(--muted)]">This floor does not exist.</div>;
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto font-mono text-xs">
-      {/* Full-width Banner Strip with numbers-grid pattern */}
-      <div
-        className="p-6 border border-[var(--color-border)] bg-[var(--color-bg-card)] relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
-        style={{ borderRadius: 'var(--radius-card)' }}
-      >
-        {/* Subtle Macrodata numbers texture overlay */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none opacity-5 font-mono text-[9px] leading-tight select-none overflow-hidden"
-        >
-          {Array(15).fill('4 8 1 5 1 6 2 3 4 2 0 8 3 7 1 9 5 2 0 3 8 4 7 1 6 2 9 0 5 3').join('\n')}
-        </div>
-
-        <div className="relative z-10 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)]">
-              // DEPARTMENTAL FLOOR
-            </span>
-            <Badge variant="outline" size="sm" className="text-[9px] uppercase">
-              {floor.category || 'Tech'}
-            </Badge>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            #{floor.name}
-          </h1>
-          <p className="text-xs text-[var(--color-text-secondary)] max-w-xl">
-            {floor.description || 'Employee exchange and unvarnished communications.'}
-          </p>
-        </div>
-
-        <div className="relative z-10 flex items-center gap-3 shrink-0">
-          <span className="text-xs text-[var(--color-text-muted)]">
-            <strong>{floor.memberCount}</strong> members
-          </span>
-          <Button
-            type="button"
-            variant={floor.isMember ? 'outline' : 'default'}
-            size="sm"
-            onClick={handleToggleJoin}
-            className="uppercase font-semibold flex items-center gap-1.5"
-          >
-            {floor.isMember ? (
-              <>
-                <Check size={14} /> Joined
-              </>
-            ) : (
-              <>
-                <Plus size={14} /> Join Floor
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Tabs: Posts | About | Layoffs */}
-      <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-1 font-mono text-xs">
-        <button
-          type="button"
-          onClick={() => setActiveTab('posts')}
-          className={`px-3 py-1.5 font-bold uppercase transition-colors border-b-2 flex items-center gap-1.5 ${
-            activeTab === 'posts'
-              ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-              : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
-          }`}
-        >
-          <MessageSquare size={13} />
-          <span>Posts ({posts.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('about')}
-          className={`px-3 py-1.5 font-bold uppercase transition-colors border-b-2 flex items-center gap-1.5 ${
-            activeTab === 'about'
-              ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-              : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
-          }`}
-        >
-          <Info size={13} />
-          <span>About</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('layoffs')}
-          className={`px-3 py-1.5 font-bold uppercase transition-colors border-b-2 flex items-center gap-1.5 ${
-            activeTab === 'layoffs'
-              ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-              : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
-          }`}
-        >
-          <TrendingDown size={13} />
-          <span>Layoffs ({layoffs.length})</span>
-        </button>
-      </div>
-
-      {/* Tab 1: Posts */}
-      {activeTab === 'posts' && (
+    <div className="max-w-4xl mx-auto p-4 text-xs">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-6 items-start">
+        {/* Main Feed Column */}
         <div className="space-y-4">
+          {/* Plain header section (no boxed card): floor name, description, member count, Join */}
+          <section className="space-y-2 pb-4 border-b border-[var(--border)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-xl font-semibold text-[var(--text)] font-head">#{floor.name}</h1>
+                <p className="text-xs text-[var(--muted)] mt-1">{floor.description || 'Corporate community exchange.'}</p>
+                <span className="text-xs text-[var(--muted)] tabular-nums mt-1 block">{floor.memberCount} members</span>
+              </div>
+              <Button
+                variant={floor.isMember ? 'outline' : 'default'}
+                size="sm"
+                onClick={handleToggleJoin}
+              >
+                {floor.isMember ? 'Joined' : 'Join'}
+              </Button>
+            </div>
+          </section>
+
+          {/* Composer */}
           <PostComposer defaultFloor={floor._id} onPostCreated={(p) => setPosts((prev) => [p, ...prev])} />
 
-          {posts.length === 0 ? (
-            <Card className="p-8 text-center text-[var(--color-text-muted)] space-y-2 bg-[var(--color-bg-card)] border border-[var(--color-border)]">
-              <AsciiArt piece="empty-no-results" size={10} still={true} tone="muted" />
-              <p>No transmissions posted on #{floor.name} yet. Be the first to post.</p>
-            </Card>
-          ) : (
-            posts.map((post) => (
-              <PostCard
-                key={post._id}
-                post={post}
-                onVote={handleVote}
-                onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
-              />
-            ))
-          )}
-        </div>
-      )}
+          {/* New / Top sort */}
+          <div className="flex items-center justify-end gap-3 px-3 py-1 border-b border-[var(--border)]">
+            <button
+              onClick={() => setSort('new')}
+              className={`cursor-pointer ${sort === 'new' ? 'font-semibold text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+            >
+              New
+            </button>
+            <button
+              onClick={() => setSort('top')}
+              className={`cursor-pointer ${sort === 'top' ? 'font-semibold text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+            >
+              Top
+            </button>
+          </div>
 
-      {/* Tab 2: About */}
-      {activeTab === 'about' && (
-        <Card className="p-6 space-y-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] font-mono text-xs">
+          {/* Post rows */}
           <div>
-            <h2 className="text-sm font-bold uppercase text-[var(--color-text-primary)]">About #{floor.name}</h2>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-1.5 leading-relaxed">
-              {floor.description || 'Established to provide open communication channels for personnel.'}
-            </p>
+            {posts.length === 0 ? (
+              <div className="py-12 text-center text-[var(--muted)]">No posts on this floor yet. Write the first one.</div>
+            ) : (
+              posts.map((post) => (
+                <PostCard key={post._id} post={post} onVote={handleVote} onDelete={(id) => setPosts((p) => p.filter((x) => x._id !== id))} />
+              ))
+            )}
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[var(--color-border)]">
-            <div className="p-3 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]">
-              <span className="text-[10px] text-[var(--color-text-muted)] block">MEMBERS</span>
-              <span className="text-lg font-bold text-[var(--color-text-primary)]">{floor.memberCount}</span>
-            </div>
-            <div className="p-3 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]">
-              <span className="text-[10px] text-[var(--color-text-muted)] block">POSTS</span>
-              <span className="text-lg font-bold text-[var(--color-text-primary)]">{posts.length}</span>
-            </div>
-            <div className="p-3 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]">
-              <span className="text-[10px] text-[var(--color-text-muted)] block">VERIFIED CUTS</span>
-              <span className="text-lg font-bold text-[var(--color-text-primary)]">{layoffs.length}</span>
-            </div>
-            <div className="p-3 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]">
-              <span className="text-[10px] text-[var(--color-text-muted)] block">SECTOR</span>
-              <span className="text-sm font-bold text-[var(--color-text-primary)]">{floor.category || 'Tech'}</span>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Tab 3: Layoffs */}
-      {activeTab === 'layoffs' && (
-        <div className="space-y-3">
-          {layoffs.length === 0 ? (
-            <Card className="p-8 text-center text-[var(--color-text-muted)] space-y-2 bg-[var(--color-bg-card)] border border-[var(--color-border)]">
-              <p>No confirmed layoffs recorded for {floor.name}.</p>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/severed-floor">Submit a Report on the Severed Floor</Link>
-              </Button>
-            </Card>
-          ) : (
-            layoffs.map((item) => <LayoffRow key={item._id} layoff={item} />)
-          )}
         </div>
-      )}
+
+        {/* Right rail: About, Severed at this floor, Hiring now */}
+        <aside className="space-y-6">
+          <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
+            <h2 className="font-semibold text-xs text-[var(--text)]">About</h2>
+            <p className="text-xs text-[var(--muted)] leading-relaxed">{floor.description || 'Community floor for personnel.'}</p>
+          </section>
+
+          <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
+            <h2 className="font-semibold text-xs text-[var(--text)]">Severed at this floor</h2>
+            {layoffs.length === 0 ? (
+              <p className="text-xs text-[var(--muted)]">No recorded reports.</p>
+            ) : (
+              layoffs.slice(0, 3).map((l) => (
+                <div key={l._id} className="text-xs border-b border-[var(--border)] pb-1 last:border-b-0">
+                  <span className="font-medium text-[var(--text)]">{l.peopleAffected || 0} affected</span>
+                  <span className="text-[10px] text-[var(--muted)] block">{new Date(l.date).toLocaleDateString()}</span>
+                </div>
+              ))
+            )}
+          </section>
+
+          <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
+            <h2 className="font-semibold text-xs text-[var(--text)]">Hiring now</h2>
+            {hiring.length === 0 ? (
+              <p className="text-xs text-[var(--muted)]">No open positions reported.</p>
+            ) : (
+              hiring.slice(0, 3).map((j) => (
+                <div key={j._id} className="text-xs border-b border-[var(--border)] pb-1 last:border-b-0">
+                  <a href={j.link} target="_blank" rel="noreferrer" className="font-medium text-[var(--text)] hover:underline block">{j.title}</a>
+                  <span className="text-[10px] text-[var(--muted)] block">{j.location || 'Remote'}</span>
+                </div>
+              ))
+            )}
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

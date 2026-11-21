@@ -1,89 +1,68 @@
 @import "tailwindcss";
 
 /*
-  ========================================================================
-  LINKED OUT DUAL DESIGN SYSTEM
-  - Outie Mode (Default): Inspired by Lamborghini Design System (docs/DESIGN-lamborghini.md)
-    * Jet-black surfaces (#000000), Charcoal (#202020), Dark Iron (#181818)
-    * Lamborghini Gold (#FFC000) primary accents, Dark Gold (#917300) hover
-    * Zero border-radius (0px) sharp angular aggressive geometry
-    * Uppercase display typography, high contrast, nocturnal luxury
-  - Innie Mode (.innie): Inspired by Slack Design System (docs/DESIGN-slack.md)
-    * Deep Aubergine (#4a154b), Canvas Cream (#f4ede4), Canvas Lavender (#f9f0ff)
-    * Pill-shaped buttons (rounded-full), soft rounded cards (rounded-xl)
-    * Friendly workplace communication style, Link Blue (#1264a3), Success Green (#007a5a)
-  ========================================================================
+  Linked Out Theme v2
+  See docs/DESIGN.md
 */
 
 :root {
-  /* Outie - Lamborghini Palette */
-  --bg: #000000;
-  --surface: #181818;
-  --surface-elevated: #202020;
-  --border: #2c2c2c;
-  --border-focus: #FFC000;
-  --text: #FFFFFF;
-  --text-secondary: #F5F5F5;
-  --muted: #7D7D7D;
-  --muted-dark: #494949;
-
-  --primary: #FFC000;
-  --primary-hover: #917300;
-  --primary-fg: #000000;
-
-  --secondary: #202020;
-  --secondary-hover: #2a2a2a;
-  --secondary-fg: #FFFFFF;
-
-  --accent-cyan: #29ABE2;
-  --accent-gold: #FFC000;
-  --destructive: #cc4117;
-  --destructive-fg: #FFFFFF;
-
-  --radius-btn: 0px;
-  --radius-card: 0px;
-  --radius-input: 0px;
-  --radius-badge: 0px;
-
-  --font-mono: 'IBM Plex Mono', monospace;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
-  transition: background-color 0.25s ease, color 0.25s ease;
+  --bg: #181E27;
+  --surface: #1F2630;
+  --hover: #262E3A;
+  --border: #313B49;
+  --text: #DCE2EA;
+  --muted: #929EAD;
+  --accent: #D6B27A;
+  --accent-ink: #1C1A14;
+  --accent-soft: #2A2F36;
+  --radius: 10px;
+  --radius-sm: 8px;
+  --row-pad: 20px;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-head: "IBM Plex Sans", system-ui, sans-serif;
+  --font-meta: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
-:root.innie {
-  /* Innie - Slack Palette */
-  --bg: #f4ede4;
-  --surface: #ffffff;
-  --surface-elevated: #f9f0ff;
-  --border: #e6e6e6;
-  --border-focus: #4a154b;
-  --text: #1d1d1d;
-  --text-secondary: #4a154b;
-  --muted: #696969;
-  --muted-dark: #b8b8b8;
-
-  --primary: #4a154b;
-  --primary-hover: #611f69;
-  --primary-fg: #ffffff;
-
-  --secondary: #f9f0ff;
-  --secondary-hover: #ebd8f5;
-  --secondary-fg: #1d1d1d;
-
-  --accent-cyan: #1264a3;
-  --accent-gold: #4a154b;
-  --destructive: #cc4117;
-  --destructive-fg: #ffffff;
-
-  --radius-btn: 9999px;
-  --radius-card: 12px;
-  --radius-input: 6px;
-  --radius-badge: 9999px;
+:root.innie,
+.innie {
+  --bg: #E6EEEA;
+  --surface: #F1F6F3;
+  --hover: #DCE6E1;
+  --border: #CBD8D2;
+  --text: #1B2A26;
+  --muted: #566761;
+  --accent: #2D6F63;
+  --accent-ink: #F1F6F3;
+  --accent-soft: #D3E3DC;
+  --radius: 2px;
+  --radius-sm: 2px;
+  --row-pad: 14px;
+  --font-head: "IBM Plex Mono", ui-monospace, monospace;
+  --font-meta: "IBM Plex Mono", ui-monospace, monospace;
 }
 
-* {
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+*, *::before, *::after {
   box-sizing: border-box;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 body {
@@ -95,29 +74,85 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Lamborghini Headings (Outie) vs Slack Headings (Innie) */
-:root:not(.innie) h1,
-:root:not(.innie) h2,
-:root:not(.innie) h3,
-:root:not(.innie) h4,
-:root:not(.innie) .brand-heading {
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-head);
 }
 
-:root.innie h1,
-:root.innie h2,
-:root.innie h3,
-:root.innie h4,
-:root.innie .brand-heading {
-  font-family: var(--font-body);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+/* Avatar: Outie circle 36px, Innie square 32px */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background-color: var(--accent-soft);
 }
 
-/* Global button focus and disabled behavior */
+:root.innie .avatar,
+.innie .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+}
+
+.avatar-initials {
+  display: flex;
+}
+
+.avatar-photo {
+  display: block;
+}
+
+.avatar-glyph {
+  display: none;
+}
+
+:root.innie .avatar-initials,
+.innie .avatar-initials,
+:root.innie .avatar-photo,
+.innie .avatar-photo {
+  display: none;
+}
+
+:root.innie .avatar-glyph,
+.innie .avatar-glyph {
+  display: block;
+}
+
+/* Sever Toggle */
+.sever-segment {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s, color 0.15s;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+:root .sever-outie {
+  background-color: var(--accent-soft);
+  color: var(--text);
+}
+:root .sever-innie {
+  background-color: transparent;
+  color: var(--muted);
+}
+:root .sever-innie:hover {
+  color: var(--text);
+}
+
+:root.innie .sever-outie,
+.innie .sever-outie {
+  background-color: transparent;
+  color: var(--muted);
+}
+:root.innie .sever-outie:hover,
+.innie .sever-outie:hover {
+  color: var(--text);
+}
+:root.innie .sever-innie,
+.innie .sever-innie {
+  background-color: var(--accent-soft);
+  color: var(--text);
+}
+
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;

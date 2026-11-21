@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Bookmark, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import PostCard from '../components/PostCard';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import EmptyState from '../components/EmptyState';
+import { useMode } from '../context/ModeContext';
 
+// Saved bookmarks feed using PostCard rows and empty state
 export default function Saved() {
+  const { mode } = useMode();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchSaved = async () => {
     try {
@@ -23,43 +25,35 @@ export default function Saved() {
 
   useEffect(() => {
     fetchSaved();
-  }, []);
+  }, [mode]);
+
+  const handleUnsave = (postId) => {
+    setPosts((prev) => prev.filter((p) => p._id !== postId));
+  };
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto font-mono text-xs">
-      <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
-        <div>
-          <h1 className="text-sm font-bold uppercase tracking-widest text-[var(--color-text-primary)] flex items-center gap-1.5">
-            <Bookmark size={15} /> // SAVED TRANSMISSIONS
-          </h1>
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Private bookmarks saved to your account.
-          </p>
-        </div>
-        <Button asChild variant="outline" size="xs">
-          <Link to="/">Back to Feed</Link>
-        </Button>
+    <div className="max-w-2xl mx-auto text-xs">
+      <div className="py-4 px-3 border-b border-[var(--border)]">
+        <h1 className="text-xl font-semibold text-[var(--text)] font-head">
+          Saved
+        </h1>
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-28 border border-[var(--color-border)] bg-[var(--color-bg-card)] animate-pulse" />
-          ))}
-        </div>
+        <div className="py-8 text-center text-[var(--muted)]">Loading saved transmissions...</div>
       ) : posts.length === 0 ? (
-        <Card className="p-8 text-center text-[var(--color-text-muted)] bg-[var(--color-bg-card)] border border-[var(--color-border)] space-y-2">
-          <Bookmark size={24} className="mx-auto opacity-30" />
-          <p>No transmissions saved yet.</p>
-          <span className="text-[11px] block">Click [ Save ] on any post to bookmark it here for quick reference.</span>
-        </Card>
+        <EmptyState
+          message="Nothing saved yet. Select Save on a post to keep it here."
+          actionLabel="Browse the feed"
+          onAction={() => navigate('/')}
+        />
       ) : (
-        <div className="space-y-3">
+        <div>
           {posts.map((post) => (
             <PostCard
               key={post._id}
-              post={post}
-              onDelete={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
+              post={{ ...post, isSaved: true }}
+              onDelete={handleUnsave}
             />
           ))}
         </div>

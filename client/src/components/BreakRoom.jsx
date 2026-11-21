@@ -1,24 +1,19 @@
-import AsciiArt from './AsciiArt';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+// Intercept modal for doxxing or language rule checks
 export default function BreakRoom({ message, onClose }) {
   if (!message) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
-      <Card className="w-full max-w-sm p-6 text-center font-mono space-y-4 shadow-xl border-[var(--border)]">
-        <div className="flex justify-center mb-1">
-          <AsciiArt piece="hourglass" size={10} still={false} tone="text" />
-        </div>
-
-        <h2 className="text-sm font-bold tracking-widest uppercase text-[var(--destructive)] font-mono">
-          BREAK ROOM INTERCEPT
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div className="w-full max-w-sm p-6 text-center space-y-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)]">
+        <h2 className="text-base font-semibold text-[var(--text)]">
+          Break room
         </h2>
 
-        <div className="space-y-3 text-xs leading-relaxed text-[var(--text)]">
-          <p>{message}</p>
-        </div>
+        <p className="text-sm leading-relaxed text-[var(--muted)]">
+          {message}
+        </p>
 
         <div className="pt-2">
           <Button
@@ -26,12 +21,12 @@ export default function BreakRoom({ message, onClose }) {
             variant="default"
             size="sm"
             onClick={onClose}
-            className="w-full font-mono uppercase tracking-wider font-semibold"
+            className="w-full"
           >
-            EDIT TRANSMISSION
+            Edit post
           </Button>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

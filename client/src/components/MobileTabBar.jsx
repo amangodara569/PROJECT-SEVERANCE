@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { Home, Layers, TrendingDown, Briefcase, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-// MobileTabBar: Bottom navigation bar for viewport widths under 768px
+// Mobile bottom navigation bar with 5 tabs and hairline top border
 export default function MobileTabBar() {
   const { user } = useAuth();
   const profilePath = user?.username ? `/u/${user.username}` : '/login';
@@ -18,7 +18,7 @@ export default function MobileTabBar() {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-[var(--color-bg-card)] border-t border-[var(--color-border)] flex items-center justify-around px-2 font-mono text-[10px]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-[var(--bg)] border-t border-[var(--border)] flex items-center justify-around px-2 text-[11px]"
     >
       {navItems.map((item) => {
         const Icon = item.icon;
@@ -29,8 +29,8 @@ export default function MobileTabBar() {
             className={({ isActive }) =>
               `flex flex-col items-center justify-center gap-1 w-14 py-1 transition-colors ${
                 isActive
-                  ? 'text-[var(--color-primary)] font-bold'
-                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+                  ? 'text-[var(--accent)] font-medium'
+                  : 'text-[var(--muted)] hover:text-[var(--text)]'
               }`
             }
           >

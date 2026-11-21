@@ -5,12 +5,14 @@ const api = axios.create({
   baseURL: '/api'
 });
 
-// Request interceptor to automatically attach JWT token if present in localStorage
+// Request interceptor to attach JWT token and active Severance mode
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const mode = localStorage.getItem('mode') || 'outie';
+  config.headers['X-Severance-Mode'] = mode;
   return config;
 }, (error) => {
   return Promise.reject(error);

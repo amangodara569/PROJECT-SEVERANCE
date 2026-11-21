@@ -1,13 +1,8 @@
 import { useState } from 'react';
-import VoteButtons from './VoteButtons';
-import { useMode } from '../context/ModeContext';
-import { useAuth } from '../context/AuthContext';
+import Avatar from './Avatar';
 import api from '../api/api';
-import AsciiCustom from './AsciiCustom';
-import innieGlyph from '../ascii/pieces/innie-glyph';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 const timeAgo = (dateStr) => {
   const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
@@ -19,15 +14,14 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(hours / 24)}d ago`;
 };
 
+// Comment item with Avatar, separate author spans, and 40px indented reply thread
 export default function CommentItem({ comment, replies = [], onVote, onAddReply }) {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [reported, setReported] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { isInnie } = useMode();
-  const { user } = useAuth();
-  const authorDisplay = comment.isInnie ? comment.innieHandle : `@${comment.author?.username || 'user'}`;
+  const authorName = comment.author?.name || comment.author?.username || 'Employee';
 
   const handleReplySubmit = async (e) => {
     e.preventDefault();
@@ -47,100 +41,91 @@ export default function CommentItem({ comment, replies = [], onVote, onAddReply 
     try {
       await api.post('/reports', { targetType: 'comment', targetId: comment._id });
       setReported(true);
-      alert('Report submitted. Please enjoy all facts equally.');
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to submit report');
     }
   };
 
   return (
-    <div className="space-y-2.5 font-mono text-xs">
-      <Card className="p-3.5 flex gap-3 transition-colors">
-        <VoteButtons
-          score={comment.score}
-          userVote={comment.userVote}
-          onVote={(val) => onVote(comment._id, val)}
-        />
+    <div className="space-y-3 py-3 border-b border-[var(--border)] text-xs">
+      <div className="flex gap-3">
+        <Avatar user={comment.author} handle={comment.innieHandle} />
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-[11px] mb-1.5 text-[var(--muted)]">
-            {comment.isInnie ? (
-              <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--text)]">
-                <AsciiCustom make={innieGlyph} options={{ handle: comment.innieHandle }} size={5} still={true} tone="text" />
-                <span>{authorDisplay}</span>
-              </span>
-            ) : (
-              <span className="font-semibold text-[var(--text)]">
-                {authorDisplay}
-              </span>
-            )}
-            <span>·</span>
-            <span>{timeAgo(comment.createdAt)}</span>
+          <div className="flex items-center gap-2 mb-1 text-xs font-meta">
+            <span className="font-medium text-[var(--text)]">
+              {comment.isInnie ? comment.innieHandle : authorName}
+            </span>
+            <span className="text-[var(--muted)]">{timeAgo(comment.createdAt)}</span>
           </div>
 
-          <p className="text-xs leading-relaxed mb-2 text-[var(--text)] font-sans">
+          <p className="text-[15px] leading-relaxed mb-2 text-[var(--text)]">
             {comment.body}
           </p>
 
-          <div className="flex items-center gap-2 text-[11px]">
-            <Button
+          <div className="flex items-center gap-3 text-xs text-[var(--muted)]">
+            <div className="flex items-center gap-1 tabular-nums font-medium">
+              <button
+                type="button"
+                onClick={() => onVote && onVote(comment._id, comment.userVote === 1 ? 0 : 1)}
+                className={`p-1 cursor-pointer transition-colors ${comment.userVote === 1 ? 'text-[var(--accent)] font-semibold' : 'hover:text-[var(--text)]'}`}
+                title="Upvote"
+              >
+                ▲
+              </button>
+              <span>{comment.score || 0}</span>
+              <button
+                type="button"
+                onClick={() => onVote && onVote(comment._id, comment.userVote === -1 ? 0 : -1)}
+                className={`p-1 cursor-pointer transition-colors ${comment.userVote === -1 ? 'text-[var(--accent)] font-semibold' : 'hover:text-[var(--text)]'}`}
+                title="Downvote"
+              >
+                ▼
+              </button>
+            </div>
+
+            <button
               type="button"
-              variant="ghost"
-              size="xs"
               onClick={() => setShowReplyBox(!showReplyBox)}
-              className="text-[11px]"
+              className="hover:text-[var(--text)] cursor-pointer"
             >
               Reply
-            </Button>
+            </button>
 
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="xs"
               onClick={handleReport}
-              className="text-[11px]"
+              className="hover:text-[var(--text)] cursor-pointer ml-auto"
             >
-              {reported ? '✓ Reported' : 'Report'}
-            </Button>
+              {reported ? 'Reported' : 'Report'}
+            </button>
           </div>
 
           {showReplyBox && (
-            <form onSubmit={handleReplySubmit} className="mt-3 pt-2.5 border-t border-[var(--border)] space-y-2">
-              <div>
-                <Textarea
-                  required
-                  rows={3}
-                  placeholder={`Replying as ${isInnie ? user?.innieHandle : `@${user?.username}`}...`}
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  className="text-xs"
-                />
-              </div>
+            <form onSubmit={handleReplySubmit} className="mt-3 space-y-2">
+              <Textarea
+                required
+                rows={2}
+                placeholder="Say it plainly."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+              />
               <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setShowReplyBox(false)}
-                >
+                <Button type="button" variant="outline" size="xs" onClick={() => setShowReplyBox(false)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="default"
-                  size="xs"
-                >
-                  {isSubmitting ? 'Posting...' : 'Reply'}
+                <Button type="submit" disabled={isSubmitting} variant="default" size="xs">
+                  {isSubmitting ? 'Replying...' : 'Reply'}
                 </Button>
               </div>
             </form>
           )}
         </div>
-      </Card>
+      </div>
 
+      {/* Indented 40px (ml-10) with no left border per theme v2 spec */}
       {replies.length > 0 && (
-        <div className={`ml-6 pl-3 border-l space-y-2 border-[var(--border)]`}>
+        <div className="ml-10 space-y-3">
           {replies.map((reply) => (
             <CommentItem
               key={reply._id}

@@ -18,7 +18,7 @@ const PREVIEW_USER = {
   ]
 };
 
-const PREVIEW_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI1NGI0OWU3LTY0YTItNGMwNi05YmJlLTEyZjdiZGNhMGMyYiIsImlhdCI6MTc5NDY0MTUzMiwiZXhwIjoxNzk3MjMzNTMyfQ.JLXelbheRDh4zZNWsj8ii9GUBkUePTj88UHTV_RKHSk';
+const PREVIEW_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI1NGI0OWU3LTY0YTItNGMwNi05YmJlLTEyZjdiZGNhMGMyYiIsImlhdCI6MTc5NTI4NzYxNywiZXhwIjoxNzk3ODc5NjE3fQ.PhSVTUkR2etduSo_a9a4iey1qfHN_Vtcfuw-W3_qswQ';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => PREVIEW_USER);
@@ -26,9 +26,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('token', PREVIEW_TOKEN);
-    setToken(PREVIEW_TOKEN);
-    setUser(PREVIEW_USER);
+    const existingToken = localStorage.getItem('token');
+    const tokenToUse = existingToken || PREVIEW_TOKEN;
+
+    localStorage.setItem('token', tokenToUse);
+    setToken(tokenToUse);
+
+    // Verify session and load authenticated user profile
+    api.get('/auth/me')
+      .then((res) => {
+        if (res.data?.user) {
+          setUser(res.data.user);
+        }
+      })
+      .catch(() => {
+        // Fallback to valid preview user token if stored token expired
+        localStorage.setItem('token', PREVIEW_TOKEN);
+        setToken(PREVIEW_TOKEN);
+        setUser(PREVIEW_USER);
+      });
   }, []);
 
   const register = async (userData) => {
@@ -49,6 +65,10 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const updateUser = (updatedFields) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedFields } : prev));
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -56,7 +76,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
