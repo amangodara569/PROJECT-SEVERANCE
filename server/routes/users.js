@@ -1,6 +1,7 @@
 const express = require('express');
 const store = require('../db/store');
 const auth = require('../middleware/auth');
+const { validateUsername } = require('../utils/validate');
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.get('/:username', (req, res) => {
     const publicUser = {
       _id: user._id,
       username: user.username,
+      avatar: user.avatar || '',
       headline: user.headline || '',
       status: user.status || 'Employed',
       bio: user.bio || '',
@@ -58,6 +60,7 @@ router.get('/:username', (req, res) => {
           author: {
             _id: user._id,
             username: user.username,
+            avatar: user.avatar || '',
             headline: user.headline || '',
             status: user.status || 'Employed'
           },
@@ -71,13 +74,27 @@ router.get('/:username', (req, res) => {
   }
 });
 
-// PUT /api/users/profile - Update own Outie profile details
+// PUT /api/users/profile - Update own Outie profile details (username, avatar, headline, bio, status)
 router.put('/profile', auth, (req, res) => {
   try {
-    const { headline, bio, status } = req.body;
+    const { username, avatar, headline, bio, status } = req.body;
     const allowedStatuses = ['Employed', 'Severed', 'Reintegrated'];
 
     const updates = {};
+
+    if (typeof username === 'string' && username.trim()) {
+      const cleanUser = username.trim();
+      const userErr = validateUsername(cleanUser);
+      if (userErr) return res.status(400).json({ error: userErr });
+
+      const existing = store.findOne('users', (u) => u.username.toLowerCase() === cleanUser.toLowerCase() && u._id !== req.user.id);
+      if (existing) {
+        return res.status(400).json({ error: 'Username is already taken' });
+      }
+      updates.username = cleanUser;
+    }
+
+    if (typeof avatar === 'string') updates.avatar = avatar.trim();
     if (typeof headline === 'string') updates.headline = headline.trim();
     if (typeof bio === 'string') updates.bio = bio.trim();
     if (status && allowedStatuses.includes(status)) updates.status = status;
@@ -89,6 +106,7 @@ router.put('/profile', auth, (req, res) => {
       user: {
         _id: updated._id,
         username: updated.username,
+        avatar: updated.avatar || '',
         email: updated.email,
         headline: updated.headline,
         bio: updated.bio,

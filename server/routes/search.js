@@ -7,14 +7,20 @@ const router = express.Router();
 router.get('/', (req, res) => {
   try {
     const q = (req.query.q || '').trim().toLowerCase();
+    const mode = (req.headers['x-severance-mode'] || req.query.mode || 'outie').toLowerCase();
+
     if (q.length < 2) {
       return res.json({ floors: [], posts: [] });
     }
 
-    // Search floors (max 5)
+    // Search floors (max 5) filtered by active mode
     const allFloors = store.getAll('floors') || [];
     const matchedFloors = allFloors
-      .filter((f) => f.name.toLowerCase().includes(q) || (f.description && f.description.toLowerCase().includes(q)))
+      .filter((f) => {
+        if (mode === 'innie' && f.mode !== 'innie') return false;
+        if (mode === 'outie' && f.mode === 'innie') return false;
+        return f.name.toLowerCase().includes(q) || (f.description && f.description.toLowerCase().includes(q));
+      })
       .slice(0, 5)
       .map((f) => ({
         _id: f._id,
@@ -24,11 +30,13 @@ router.get('/', (req, res) => {
         memberCount: Array.isArray(f.members) ? f.members.length : 0
       }));
 
-    // Search posts (max 5) - Strictly never match by innie author and sanitize innie output
+    // Search posts (max 5) filtered by active mode
     const allPosts = store.getAll('posts') || [];
     const matchedPosts = allPosts
       .filter((p) => {
         if (p.hidden) return false;
+        if (mode === 'innie' && !p.isInnie) return false;
+        if (mode === 'outie' && p.isInnie) return false;
         const inTitle = p.title && p.title.toLowerCase().includes(q);
         const inBody = p.body && p.body.toLowerCase().includes(q);
         return inTitle || inBody;

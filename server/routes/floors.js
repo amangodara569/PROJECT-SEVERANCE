@@ -47,9 +47,18 @@ const sanitizeFloorPublic = (floor, postsTodayMap = {}) => {
 router.get('/', async (req, res) => {
   try {
     const { q, category, sort, limit } = req.query;
+    const mode = (req.headers['x-severance-mode'] || req.query.mode || 'outie').toLowerCase();
 
-    const baseFloors = await cache.wrap('floors:list:v2', 30, async () => {
-      const all = store.getAll('floors') || [];
+    const baseFloors = await cache.wrap(`floors:list:v2:${mode}`, 30, async () => {
+      let all = store.getAll('floors') || [];
+
+      // Segregate Innie department floors vs Outie company floors
+      if (mode === 'innie') {
+        all = all.filter((f) => f.mode === 'innie');
+      } else {
+        all = all.filter((f) => f.mode !== 'innie');
+      }
+
       const allPosts = store.getAll('posts') || [];
       const now = Date.now();
       const oneDayMs = 24 * 60 * 60 * 1000;
@@ -108,13 +117,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/floors - Create a new company floor and bust floors cache
+// POST /api/floors - Create a new company or department floor and bust floors cache
 router.post('/', auth, (req, res) => {
   try {
     const { name, description } = req.body;
+    const mode = (req.headers['x-severance-mode'] || req.query.mode || 'outie').toLowerCase();
 
     if (!name || typeof name !== 'string' || !name.trim()) {
-      return res.status(400).json({ error: 'Company name is required' });
+      return res.status(400).json({ error: 'Floor name is required' });
     }
 
     const slug = makeSlug(name);
@@ -122,13 +132,14 @@ router.post('/', auth, (req, res) => {
 
     const existing = store.findOne('floors', (f) => f.name.toLowerCase() === cleanName.toLowerCase() || f.slug === slug);
     if (existing) {
-      return res.status(400).json({ error: 'A floor for this company already exists' });
+      return res.status(400).json({ error: 'A floor with this name already exists' });
     }
 
     const floorObj = makeFloor({
       name: cleanName,
       slug,
       description: typeof description === 'string' ? description.trim() : '',
+      mode: mode === 'innie' ? 'innie' : 'outie',
       members: [req.user.id],
       createdBy: req.user.id
     });
@@ -143,6 +154,8 @@ router.post('/', auth, (req, res) => {
       }
     }
 
+    cache.del('floors:list:v2:innie');
+    cache.del('floors:list:v2:outie');
     cache.del('floors:list');
 
     res.status(201).json({

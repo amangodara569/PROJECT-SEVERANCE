@@ -92,6 +92,7 @@ router.get('/', async (req, res) => {
     const sort = req.query.sort === 'top' ? 'top' : 'new';
     const timeFilter = (req.query.time || req.query.t || 'all').toLowerCase();
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 50);
+    const mode = (req.headers['x-severance-mode'] || req.query.mode || 'outie').toLowerCase();
 
     let floorId = 'all';
     if (floor) {
@@ -100,11 +101,18 @@ router.get('/', async (req, res) => {
     }
 
     const floorVer = cache.getFloorVersion(floorId);
-    const cacheKey = `feed:${floorId}:${sort}:${timeFilter}:${floorVer}:${cursor || 'start'}:${limit}`;
+    const cacheKey = `feed:${mode}:${floorId}:${sort}:${timeFilter}:${floorVer}:${cursor || 'start'}:${limit}`;
 
     // Note: Cached public feed allows score changes up to 20 seconds old for high throughput
     const pageData = await cache.wrap(cacheKey, 20, async () => {
       let posts = store.getAll('posts').filter((p) => !p.hidden);
+
+      // Strict mode segregation: Innie mode shows only innie posts; Outie shows only outie posts
+      if (mode === 'innie') {
+        posts = posts.filter((p) => Boolean(p.isInnie));
+      } else {
+        posts = posts.filter((p) => !p.isInnie);
+      }
 
       if (floorId !== 'all') {
         posts = posts.filter((p) => p.floor && p.floor.toString() === floorId.toString());
@@ -196,6 +204,8 @@ router.get('/', async (req, res) => {
 router.post('/', auth, (req, res) => {
   try {
     const { title, body, type, floor, isInnie } = req.body;
+    const mode = (req.headers['x-severance-mode'] || req.query.mode || 'outie').toLowerCase();
+    const isModeInnie = mode === 'innie' || Boolean(isInnie);
 
     const validationErr = validatePost(title, body);
     if (validationErr) return res.status(400).json({ error: validationErr });
@@ -217,8 +227,8 @@ router.post('/', auth, (req, res) => {
       type: type || 'vent',
       floor: floor || null,
       author: req.user.id,
-      isInnie: Boolean(isInnie),
-      innieHandle: user.innieHandle
+      isInnie: isModeInnie,
+      innieHandle: isModeInnie ? (user.innieHandle || 'Innie-0000') : null
     });
 
     const post = store.insert('posts', postObj);
@@ -231,7 +241,7 @@ router.post('/', auth, (req, res) => {
     cache.bumpFloorVersion('all');
 
     const sanitized = sanitizePostPublic(post);
-    res.status(201).json({ post: { ...sanitized, myVote: 0, userVote: 0, isOwner: !isInnie } });
+    res.status(201).json({ post: { ...sanitized, myVote: 0, userVote: 0, isOwner: !isModeInnie } });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error creating post' });
   }
@@ -241,10 +251,19 @@ router.post('/', auth, (req, res) => {
 router.get('/trending', async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 3, 1), 10);
+    const mode = (req.headers['x-severance-mode'] || req.query.mode || 'outie').toLowerCase();
     const now = Date.now();
     const windowMs = 24 * 60 * 60 * 1000;
     const posts = store.getAll('posts')
-      .filter((p) => !p.hidden && (now - new Date(p.createdAt).getTime()) <= windowMs)
+      .filter((p) => {
+        if (p.hidden) return false;
+        if (mode === 'innie') {
+          if (!p.isInnie) return false;
+        } else {
+          if (p.isInnie) return false;
+        }
+        return (now - new Date(p.createdAt).getTime()) <= windowMs;
+      })
       .sort((a, b) => (b.score || 0) - (a.score || 0))
       .slice(0, limit)
       .map(sanitizePostPublic);

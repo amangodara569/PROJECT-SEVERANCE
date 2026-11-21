@@ -4,30 +4,7 @@ How every screen and component should look. Features are in `design.md`, structu
 
 ## 1. Look and feel
 
-Cold, quiet, corporate, a little unsettling. Think old office terminal. Black and white only (final theme decided later).
-
-**Theme variables** (in `index.css`, used everywhere, never hard-code colors in components):
-
-| Variable | Outie (default) | Innie (inverted) |
-|---|---|---|
-| `--bg` | `#000000` | `#ffffff` |
-| `--surface` | `#0a0a0a` | `#f5f5f5` |
-| `--border` | `#262626` | `#d4d4d4` |
-| `--text` | `#ffffff` | `#000000` |
-| `--muted` | `#a3a3a3` | `#525252` |
-
-- The Innie colors apply when the root element has the class `innie`.
-- Because everything uses variables, the Sever toggle only flips one class.
-- Add `transition: background-color .3s, color .3s` on the root so the flip feels smooth.
-
-**Fonts:** headings and labels in a monospace font (`IBM Plex Mono`, fallback `monospace`). Body in `Inter` (fallback `sans-serif`).
-**Shapes:** square corners (radius 2px at most). 1px borders. No shadows, no gradients.
-**Spacing:** 4px grid. Cards have 16px padding. Page content max width 1100px.
-**Buttons:**
-- Primary: filled with `--text`, text in `--bg`.
-- Secondary: transparent, 1px `--border`, text `--text`.
-- Hover: swap them.
-**Icons:** simple outline icons only. A small waffle icon is used in Waffle Party.
+See docs/DESIGN.md.
 
 ## 2. Layout
 

@@ -10,12 +10,17 @@ router.get('/saved', auth, (req, res) => {
     const user = store.findById('users', req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
+    const mode = (req.headers['x-severance-mode'] || req.query.mode || 'outie').toLowerCase();
     const savedIds = Array.isArray(user.savedPosts) ? user.savedPosts : [];
     const posts = [];
 
     for (const id of savedIds) {
       const p = store.findById('posts', id);
       if (p && !p.hidden) {
+        // Segregate saved posts by mode
+        if (mode === 'innie' && !p.isInnie) continue;
+        if (mode === 'outie' && p.isInnie) continue;
+
         let floorData = null;
         if (p.floor) {
           const f = store.findById('floors', p.floor);

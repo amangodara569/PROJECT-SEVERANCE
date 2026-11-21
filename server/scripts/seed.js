@@ -2,13 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Computes ISO timestamp from days ago
 const daysAgo = (d, extraHours = 0) => {
   return new Date(Date.now() - (d * 86400 * 1000) - (extraHours * 3600 * 1000)).toISOString();
 };
 
-const runSeed = () => {
+const runSeed = async () => {
   if (process.env.NODE_ENV === 'production') {
     console.error('Cannot run seed script in production environment.');
     process.exit(1);
@@ -60,7 +61,13 @@ const runSeed = () => {
     { name: 'PulseAI', slug: 'pulseai', category: 'Startup', desc: 'Generative intelligence ventures and automated pipelines.' },
     { name: 'Titan Foundry', slug: 'titan-foundry', category: 'Manufacturing', desc: 'Heavy industrial automation and supply chain lines.' },
     { name: 'AeroDyn Industries', slug: 'aerodyn', category: 'Manufacturing', desc: 'Aerospace structural design and defense logistics.' },
-    { name: 'General Sector', slug: 'general-sector', category: 'Other', desc: 'Open floor for cross-industry discussions and reintegration.' }
+    { name: 'General Sector', slug: 'general-sector', category: 'Other', desc: 'Open floor for cross-industry discussions and reintegration.' },
+    // Innie Severed Department Floors
+    { name: 'Macrodata Refinement', slug: 'macrodata-refinement', category: 'Other', desc: 'Binning numbers into the four tempers: Woe, Frolic, Dread, and Malice.', mode: 'innie' },
+    { name: 'Optics and Design', slug: 'optics-and-design', category: 'Other', desc: 'Crafting hatchets, cards, and corporate ideology paintings.', mode: 'innie' },
+    { name: 'Disposal and Reclamation', slug: 'disposal-and-reclamation', category: 'Other', desc: 'Handling facilities, materials, and department sanitization.', mode: 'innie' },
+    { name: 'Testing Floor', slug: 'testing-floor', category: 'Other', desc: 'Sub-level elevator access. The floor below the severed floor.', mode: 'innie' },
+    { name: 'Wellness Center', slug: 'wellness-center', category: 'Other', desc: 'Guided candle sessions. Please enjoy each fact equally.', mode: 'innie' }
   ];
 
   const floorMap = {};
@@ -74,6 +81,7 @@ const runSeed = () => {
       slug: f.slug,
       category: f.category,
       description: f.desc,
+      mode: f.mode || 'outie',
       createdBy: users[0]._id,
       members,
       createdAt: daysAgo(60 - i * 2)
@@ -254,11 +262,36 @@ const runSeed = () => {
 
   const dbData = { users, floors, posts, comments, layoffs, jobs, votes, reports };
   fs.writeFileSync(dbPath, JSON.stringify(dbData, null, 2), 'utf8');
-  console.log(`Seeded: ${users.length} users, ${floors.length} floors, ${posts.length} posts, ${comments.length} comments, ${layoffs.length} layoffs, ${jobs.length} jobs, ${votes.length} votes.`);
+  console.log(`Seeded local store: ${users.length} users, ${floors.length} floors, ${posts.length} posts, ${comments.length} comments, ${layoffs.length} layoffs, ${jobs.length} jobs, ${votes.length} votes.`);
+
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (uri) {
+    try {
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) {
+        await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+      }
+      const db = mongoose.connection.db || (mongoose.connection.getClient && mongoose.connection.getClient().db());
+      if (db) {
+        for (const [colName, docs] of Object.entries(dbData)) {
+          if (docs && docs.length > 0) {
+            await db.collection(colName).deleteMany({});
+            await db.collection(colName).insertMany(docs);
+          }
+        }
+        console.log('MongoDB Atlas successfully synchronized with seed data.');
+      }
+    } catch (e) {
+      console.warn('Atlas sync during seed warning:', e.message);
+    }
+  }
 };
 
 if (require.main === module) {
-  runSeed();
+  runSeed().then(() => process.exit(0)).catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
 }
 
 module.exports = { runSeed };

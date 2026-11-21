@@ -19,6 +19,25 @@ let data = {
 };
 
 let isAtlasConnected = false;
+let connectPromise = null;
+
+// Helper to safely get the MongoDB database handle from Mongoose
+const getDb = () => {
+  if (mongoose.connection && mongoose.connection.db) {
+    return mongoose.connection.db;
+  }
+  if (mongoose.connection && typeof mongoose.connection.getClient === 'function') {
+    try {
+      const client = mongoose.connection.getClient();
+      if (client && typeof client.db === 'function') {
+        return client.db();
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
 
 // Writes the in-memory store to db.json synchronously
 const saveLocal = () => {
@@ -34,9 +53,10 @@ const saveLocal = () => {
 
 // Asynchronously persists an operation to MongoDB Atlas when connected
 const syncToAtlas = async (action, collectionName, itemOrId, changes = null) => {
-  if (!isAtlasConnected || !mongoose.connection.db) return;
+  const db = getDb();
+  if (!isAtlasConnected || !db) return;
   try {
-    const col = mongoose.connection.db.collection(collectionName);
+    const col = db.collection(collectionName);
     if (action === 'insert') {
       await col.updateOne({ _id: itemOrId._id }, { $set: itemOrId }, { upsert: true });
     } else if (action === 'update') {
@@ -53,9 +73,9 @@ const syncToAtlas = async (action, collectionName, itemOrId, changes = null) => 
 
 // Ensures required performance and uniqueness indexes are built on Atlas collections
 const ensureIndexes = async () => {
-  if (!isAtlasConnected || !mongoose.connection.db) return;
+  const db = getDb();
+  if (!isAtlasConnected || !db) return;
   try {
-    const db = mongoose.connection.db;
     await db.collection('posts').createIndex({ floor: 1, createdAt: -1 });
     await db.collection('posts').createIndex({ score: -1, _id: -1 });
     await db.collection('posts').createIndex({ hidden: 1, createdAt: -1 });
@@ -75,31 +95,47 @@ const ensureIndexes = async () => {
 // Initializes connection to MongoDB Atlas if MONGODB_URI is provided
 const initAtlas = async () => {
   const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
-  if (!uri) return;
+  if (!uri) return false;
+  if (isAtlasConnected && getDb()) return true;
+  if (connectPromise) return connectPromise;
 
-  try {
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
-      maxPoolSize: 20
-    });
-    isAtlasConnected = true;
-
-    const colNames = ['users', 'floors', 'posts', 'comments', 'layoffs', 'jobs', 'reports', 'votes'];
-    for (const name of colNames) {
-      const col = mongoose.connection.db.collection(name);
-      const docs = await col.find({}).maxTimeMS(5000).toArray();
-      if (docs && docs.length > 0) {
-        data[name] = docs;
-      } else if (data[name] && data[name].length > 0) {
-        await col.insertMany(data[name]);
+  connectPromise = (async () => {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        await mongoose.connect(uri, {
+          serverSelectionTimeoutMS: 5000,
+          maxPoolSize: 20
+        });
       }
+      const db = getDb();
+      if (!db) {
+        throw new Error('Database handle not available after connection');
+      }
+      isAtlasConnected = true;
+
+      const colNames = ['users', 'floors', 'posts', 'comments', 'layoffs', 'jobs', 'reports', 'votes'];
+      for (const name of colNames) {
+        const col = db.collection(name);
+        const docs = await col.find({}).maxTimeMS(5000).toArray();
+        if (docs && docs.length > 0) {
+          data[name] = docs;
+        } else if (data[name] && data[name].length > 0) {
+          await col.insertMany(data[name]);
+        }
+      }
+      await ensureIndexes();
+      saveLocal();
+      return true;
+    } catch (err) {
+      isAtlasConnected = false;
+      console.warn('MongoDB Atlas connection failed. Falling back to local JSON store:', err.message);
+      return false;
+    } finally {
+      connectPromise = null;
     }
-    await ensureIndexes();
-    saveLocal();
-  } catch (err) {
-    isAtlasConnected = false;
-    console.warn('MongoDB Atlas connection failed. Falling back to local JSON store:', err.message);
-  }
+  })();
+
+  return connectPromise;
 };
 
 // Loads db.json into memory or triggers seed initialization
