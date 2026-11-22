@@ -34,7 +34,7 @@ export const ModeProvider = ({ children }) => {
   const isInnie = mode === 'innie';
 
   return (
-    <ModeContext.Provider value={{ mode, isInnie, toggleMode }}>
+    <ModeContext.Provider value={{ mode, isInnie, toggleMode, setMode }}>
       {children}
     </ModeContext.Provider>
   );
