@@ -3,6 +3,7 @@ const makeComment = (data = {}) => {
   return {
     post: data.post || null,
     parent: data.parent || null,
+    replyToUser: data.replyToUser || null,
     body: data.body ? data.body.trim() : '',
     author: data.author || null,
     isInnie: Boolean(data.isInnie),

@@ -14,6 +14,7 @@ const PostPage = lazy(() => import('./pages/PostPage'));
 const SeveredFloor = lazy(() => import('./pages/SeveredFloor'));
 const Comeback = lazy(() => import('./pages/Comeback'));
 const Profile = lazy(() => import('./pages/Profile'));
+const EditProfile = lazy(() => import('./pages/EditProfile'));
 const Handbook = lazy(() => import('./pages/Handbook'));
 const Wellness = lazy(() => import('./pages/Wellness'));
 const Saved = lazy(() => import('./pages/Saved'));
@@ -57,6 +58,8 @@ function AppRoutes() {
               <Route path="/severed-floor" element={<SeveredFloor />} />
               <Route path="/comeback" element={<Comeback />} />
               <Route path="/saved" element={<Saved />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/edit" element={<Profile />} />
               <Route path="/u/:username" element={<Profile />} />
               <Route path="/handbook" element={<Handbook />} />
               <Route path="/wellness" element={<Wellness />} />

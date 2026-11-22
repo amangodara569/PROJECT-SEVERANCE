@@ -4,11 +4,12 @@ import api from '../api/api';
 const AuthContext = createContext(null);
 
 const PREVIEW_USER = {
-  _id: 'b54b49e7-64a2-4c06-9bbe-12f7bdca0c2b',
-  username: 'aman_test',
+  _id: '2d014fdf-0d5b-4b1d-a44c-10578916690a',
+  username: 'aman233',
+  name: 'Aman Godara',
   email: 'aman@lumon.com',
-  headline: 'Lead System Architect at TechNova',
-  bio: 'Building distributed platforms. Pragmatic engineer.',
+  headline: 'Lead Architect @ TechNova',
+  bio: 'Building high throughput systems.',
   status: 'Employed',
   innieHandle: 'Innie-1001',
   isAdmin: true,
@@ -18,7 +19,7 @@ const PREVIEW_USER = {
   ]
 };
 
-const PREVIEW_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI1NGI0OWU3LTY0YTItNGMwNi05YmJlLTEyZjdiZGNhMGMyYiIsImlhdCI6MTc5NTI4NzYxNywiZXhwIjoxNzk3ODc5NjE3fQ.PhSVTUkR2etduSo_a9a4iey1qfHN_Vtcfuw-W3_qswQ';
+const PREVIEW_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjJkMDE0ZmRmLTBkNWItNGIxZC1hNDRjLTEwNTc4OTE2NjkwYSIsImlhdCI6MTc5NTMyNjk1NywiZXhwIjoxODI2ODYyOTU3fQ.A6Y8anTtSGOWjQcF1jI5m-ubA_yNq8_oeVjqwyCcz2U';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => PREVIEW_USER);
@@ -40,10 +41,15 @@ export const AuthProvider = ({ children }) => {
         }
       })
       .catch(() => {
-        // Fallback to valid preview user token if stored token expired
+        // Fallback to valid signed preview user token if stored token expired or had invalid signature
         localStorage.setItem('token', PREVIEW_TOKEN);
         setToken(PREVIEW_TOKEN);
         setUser(PREVIEW_USER);
+        api.get('/auth/me')
+          .then((res) => {
+            if (res.data?.user) setUser(res.data.user);
+          })
+          .catch(() => {});
       });
   }, []);
 

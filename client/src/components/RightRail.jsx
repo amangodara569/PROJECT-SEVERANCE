@@ -20,25 +20,22 @@ const renderMiniBarChart = (numbers = []) => {
     .join('');
 };
 
-// Right rail with severed count, trending posts, suggested floors, and contextual rules
+// Right rail with severed count and suggested floors (clean Severance terminal view)
 export default function RightRail({ floorContext = null, postContext = null }) {
   const { mode } = useMode();
   const currentFloor = floorContext || postContext?.floor;
   const [overview, setOverview] = useState({ severedThisMonth: 0, severedByDay: [] });
   const [popularFloors, setPopularFloors] = useState([]);
-  const [trendingPosts, setTrendingPosts] = useState([]);
 
   useEffect(() => {
     const loadModules = async () => {
       try {
-        const [statsRes, floorsRes, trendingRes] = await Promise.all([
+        const [statsRes, floorsRes] = await Promise.all([
           api.get('/stats/overview'),
-          api.get('/floors?sort=members&limit=5'),
-          api.get('/posts/trending?limit=3')
+          api.get('/floors?sort=members&limit=5')
         ]);
         setOverview(statsRes.data || { severedThisMonth: 0, severedByDay: [] });
         setPopularFloors(floorsRes.data.floors || []);
-        setTrendingPosts(trendingRes.data.posts || []);
       } catch (err) {
         console.error(err);
       }
@@ -48,9 +45,16 @@ export default function RightRail({ floorContext = null, postContext = null }) {
 
   const handleJoinFloor = async (id, slug) => {
     try {
-      await api.post(`/floors/${slug}/join`);
+      const res = await api.post(`/floors/${slug}/join`);
+      const target = popularFloors.find((f) => f._id === id);
+      const isJoined = res.data.joined;
       setPopularFloors((prev) =>
-        prev.map((f) => (f._id === id ? { ...f, isMember: true, memberCount: f.memberCount + 1 } : f))
+        prev.map((f) => (f._id === id ? { ...f, isMember: isJoined, memberCount: res.data.memberCount } : f))
+      );
+      window.dispatchEvent(
+        new CustomEvent('linkedout:floor-joined', {
+          detail: { floorId: id, slug, name: target?.name, joined: isJoined }
+        })
       );
     } catch (err) {
       console.error(err);
@@ -103,29 +107,8 @@ export default function RightRail({ floorContext = null, postContext = null }) {
         )}
       </section>
 
-      {/* Trending on your floors */}
-      <section className="space-y-3 pb-6 border-b border-[var(--border)]">
-        <h2 className="text-sm font-semibold text-[var(--text)]">Trending on your floors</h2>
-        {trendingPosts.length === 0 ? (
-          <p className="text-xs text-[var(--muted)]">No trending posts in last 24h.</p>
-        ) : (
-          <div className="space-y-3">
-            {trendingPosts.map((post) => (
-              <Link key={post._id} to={`/post/${post._id}`} className="block group">
-                <span className="font-medium text-[var(--text)] text-xs line-clamp-2 group-hover:text-[var(--accent)]">
-                  {post.title}
-                </span>
-                <span className="text-[11px] text-[var(--muted)] mt-0.5 block">
-                  {post.floor ? `${post.floor.name}  ` : ''}{post.score || 0}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* Suggested floors */}
-      <section className="space-y-3 pb-6 border-b border-[var(--border)]">
+      <section className="space-y-3">
         <h2 className="text-sm font-semibold text-[var(--text)]">Suggested floors</h2>
         <div className="space-y-3">
           {popularFloors.map((floor) => (
@@ -156,13 +139,6 @@ export default function RightRail({ floorContext = null, postContext = null }) {
           ))}
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="flex items-center gap-3 text-xs text-[var(--muted)] pt-2">
-        <Link to="/handbook" className="hover:text-[var(--text)]">Handbook</Link>
-        <Link to="/wellness" className="hover:text-[var(--text)]">Wellness</Link>
-        <Link to="/handbook" className="hover:text-[var(--text)]">Privacy</Link>
-      </footer>
     </aside>
   );
 }

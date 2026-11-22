@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { X } from 'lucide-react';
 import TopBar from './TopBar';
 import LeftNav from './LeftNav';
 import RightRail from './RightRail';
@@ -33,20 +34,20 @@ export default function AppShell() {
         </div>
       )}
 
-      {/* Multi-Column Layout: hairline dividers, no boxes */}
+      {/* Multi-Column Layout: balanced column proportions, hairline dividers */}
       <div className="pt-14 w-full flex justify-center pb-16 md:pb-0">
-        <div className="w-full max-w-[1400px] grid grid-cols-1 md:grid-cols-[200px_1fr] lg:grid-cols-[240px_minmax(0,700px)_320px] justify-center">
-          {/* Left Column (240px) */}
+        <div className="w-full max-w-[1400px] px-4 grid grid-cols-1 md:grid-cols-[240px_1fr] lg:grid-cols-[260px_minmax(0,1fr)_260px] justify-center">
+          {/* Left Column (260px) */}
           <div className="hidden md:block border-r border-[var(--border)]">
             <LeftNav />
           </div>
 
-          {/* Center Column (Feed up to 700px) */}
+          {/* Center Column (Feed) */}
           <main className="w-full min-w-0 overflow-x-hidden">
             <Outlet context={{ onOpenComposer: () => setShowComposerModal(true) }} />
           </main>
 
-          {/* Right Column (320px) */}
+          {/* Right Column (260px) */}
           <div className="hidden lg:block sticky top-14 h-[calc(100vh-56px)] overflow-y-auto p-4 border-l border-[var(--border)]">
             <RightRail />
           </div>
@@ -56,27 +57,30 @@ export default function AppShell() {
       {/* Mobile Tab Bar */}
       <MobileTabBar />
 
-      {/* Optional Composer Modal */}
+      {/* Direct Post Composer Modal (no preliminary teaser window) */}
       {showComposerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <div className="w-full max-w-lg p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)]">
+          <div className="w-full max-w-lg p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-xl">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--border)]">
-              <span className="font-semibold text-sm text-[var(--text)]">
+              <span className="font-semibold text-sm text-[var(--text)] font-head">
                 New post
               </span>
               <button
                 type="button"
                 onClick={() => setShowComposerModal(false)}
-                className="text-xs text-[var(--muted)] hover:text-[var(--text)] cursor-pointer"
+                className="text-[var(--muted)] hover:text-[var(--text)] p-1 cursor-pointer transition-colors"
+                aria-label="Close dialog"
               >
-                Close
+                <X size={16} />
               </button>
             </div>
             <PostComposer
+              initialOpen={true}
               onPostCreated={() => {
                 setShowComposerModal(false);
                 window.location.reload();
               }}
+              onCancel={() => setShowComposerModal(false)}
             />
           </div>
         </div>

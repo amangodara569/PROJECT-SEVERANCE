@@ -25,6 +25,7 @@ router.get('/:username', (req, res) => {
 
     const publicUser = {
       _id: user._id,
+      name: user.name || '',
       username: user.username,
       avatar: user.avatar || '',
       headline: user.headline || '',
@@ -56,9 +57,10 @@ router.get('/:username', (req, res) => {
           isInnie: false,
           commentCount: p.commentCount || 0,
           reportCount: p.reportCount || 0,
-          score: (p.upvotes?.length || 0) - (p.downvotes?.length || 0),
+          score: typeof p.score === 'number' ? p.score : 0,
           author: {
             _id: user._id,
+            name: user.name || '',
             username: user.username,
             avatar: user.avatar || '',
             headline: user.headline || '',
@@ -77,11 +79,12 @@ router.get('/:username', (req, res) => {
 // PUT /api/users/profile - Update own Outie profile details (username, avatar, headline, bio, status)
 router.put('/profile', auth, (req, res) => {
   try {
-    const { username, avatar, headline, bio, status } = req.body;
+    const { name, username, avatar, headline, bio, status } = req.body;
     const allowedStatuses = ['Employed', 'Severed', 'Reintegrated'];
 
     const updates = {};
 
+    if (typeof name === 'string') updates.name = name.trim();
     if (typeof username === 'string' && username.trim()) {
       const cleanUser = username.trim();
       const userErr = validateUsername(cleanUser);
@@ -105,6 +108,7 @@ router.put('/profile', auth, (req, res) => {
     res.json({
       user: {
         _id: updated._id,
+        name: updated.name || '',
         username: updated.username,
         avatar: updated.avatar || '',
         email: updated.email,

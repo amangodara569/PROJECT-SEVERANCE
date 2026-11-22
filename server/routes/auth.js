@@ -19,6 +19,7 @@ const createToken = (userId) => {
 const sanitizeUser = (user) => {
   return {
     _id: user._id,
+    name: user.name || '',
     username: user.username,
     email: user.email,
     headline: user.headline,

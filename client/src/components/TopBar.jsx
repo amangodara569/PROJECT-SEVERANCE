@@ -4,10 +4,11 @@ import { Search, Plus, Menu, X, User, Bookmark, BookOpen, LogOut } from 'lucide-
 import { useAuth } from '../context/AuthContext';
 import SeverToggle from './SeverToggle';
 import Avatar from './Avatar';
+import LinkedOutLogo from './LinkedOutLogo';
 import api from '../api/api';
 import { Button } from '@/components/ui/button';
 
-// TopBar: 56px header with logo, search input, Sever toggle, create button, and user avatar
+// TopBar: 56px header with brand logo, brand title, adjacent search input, Sever toggle, create button, and user avatar
 export default function TopBar({ onToggleMobileNav, isMobileNavOpen, onOpenComposer }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -82,77 +83,82 @@ export default function TopBar({ onToggleMobileNav, isMobileNavOpen, onOpenCompo
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-[var(--bg)] border-b border-[var(--border)] px-4 flex items-center justify-between gap-3">
-      {/* Left: Mobile hamburger & Logo */}
-      <div className="flex items-center gap-3 shrink-0">
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-[var(--bg)] border-b border-[var(--border)]">
+      <div className="w-full max-w-[1400px] mx-auto px-4 h-full flex items-center justify-between gap-3">
+        {/* Left: Mobile hamburger, Brand Logo, Title & Adjacent Search Input */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
         <button
           type="button"
           aria-label="Toggle navigation"
           onClick={onToggleMobileNav}
-          className="md:hidden p-1 text-[var(--muted)] hover:text-[var(--text)]"
+          className="md:hidden p-1 text-[var(--muted)] hover:text-[var(--text)] shrink-0"
         >
           {isMobileNavOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <Link to="/" className="text-sm font-semibold tracking-tight text-[var(--text)]">
-          Linked Out
+        <Link
+          to="/"
+          className="flex items-center shrink-0 hover:opacity-85 transition-opacity"
+          aria-label="Linked Out Home"
+        >
+          <LinkedOutLogo />
         </Link>
-      </div>
 
-      {/* Center: Search input */}
-      <div ref={searchRef} className="relative flex-1 max-w-md mx-2 hidden sm:block">
-        <div className="relative flex items-center">
-          <Search size={14} className="absolute left-3 text-[var(--muted)] pointer-events-none" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => query.trim().length >= 2 && setShowDropdown(true)}
-            placeholder="Search posts and floors"
-            className="w-full h-9 pl-9 pr-3 text-xs bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)] placeholder:text-[var(--muted)] transition-colors"
-          />
-        </div>
+        {/* Search input placed immediately adjacent to the brand logo */}
+        <div ref={searchRef} className="relative w-56 sm:w-64 md:w-80 ml-3 hidden sm:block">
+          <div className="relative flex items-center">
+            <Search size={14} className="absolute left-3 text-[var(--muted)] pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => query.trim().length >= 2 && setShowDropdown(true)}
+              placeholder="Search posts and floors"
+              className="w-full h-9 pl-9 pr-3 text-xs bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)] placeholder:text-[var(--muted)] transition-colors"
+            />
+          </div>
 
-        {/* Search Results Dropdown */}
-        {showDropdown && combinedResults.length > 0 && (
-          <div className="absolute top-10 left-0 right-0 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] p-2 space-y-1 text-xs z-50 max-h-80 overflow-y-auto">
-            {combinedResults.map((item, index) => {
-              const isSelected = index === selectedIndex;
-              if (item.type === 'floor') {
-                const f = item.data;
+          {/* Search Results Dropdown */}
+          {showDropdown && combinedResults.length > 0 && (
+            <div className="absolute top-10 left-0 right-0 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] p-2 space-y-1 text-xs z-50 max-h-80 overflow-y-auto shadow-md">
+              {combinedResults.map((item, index) => {
+                const isSelected = index === selectedIndex;
+                if (item.type === 'floor') {
+                  const f = item.data;
+                  return (
+                    <button
+                      key={`floor-${f._id}`}
+                      type="button"
+                      onClick={() => { setShowDropdown(false); setSelectedIndex(-1); navigate(item.url); }}
+                      className={`w-full text-left p-2 flex items-center justify-between rounded-[var(--radius-sm)] cursor-pointer transition-colors ${
+                        isSelected ? 'bg-[var(--hover)] ring-1 ring-[var(--accent)]' : 'hover:bg-[var(--hover)]'
+                      }`}
+                    >
+                      <span className="font-medium text-[var(--text)]">#{f.name}</span>
+                      <span className="text-[10px] text-[var(--muted)]">{f.memberCount} members</span>
+                    </button>
+                  );
+                }
+
+                const p = item.data;
                 return (
                   <button
-                    key={`floor-${f._id}`}
+                    key={`post-${p._id}`}
                     type="button"
                     onClick={() => { setShowDropdown(false); setSelectedIndex(-1); navigate(item.url); }}
-                    className={`w-full text-left p-2 flex items-center justify-between rounded-[var(--radius-sm)] cursor-pointer transition-colors ${
+                    className={`w-full text-left p-2 flex flex-col rounded-[var(--radius-sm)] cursor-pointer transition-colors ${
                       isSelected ? 'bg-[var(--hover)] ring-1 ring-[var(--accent)]' : 'hover:bg-[var(--hover)]'
                     }`}
                   >
-                    <span className="font-medium text-[var(--text)]">#{f.name}</span>
-                    <span className="text-[10px] text-[var(--muted)]">{f.memberCount} members</span>
+                    <span className="font-medium text-[var(--text)] line-clamp-1">{p.title}</span>
+                    <span className="text-[10px] text-[var(--muted)]">{p.floor ? `#${p.floor.name}` : ''}</span>
                   </button>
                 );
-              }
-
-              const p = item.data;
-              return (
-                <button
-                  key={`post-${p._id}`}
-                  type="button"
-                  onClick={() => { setShowDropdown(false); setSelectedIndex(-1); navigate(item.url); }}
-                  className={`w-full text-left p-2 flex flex-col rounded-[var(--radius-sm)] cursor-pointer transition-colors ${
-                    isSelected ? 'bg-[var(--hover)] ring-1 ring-[var(--accent)]' : 'hover:bg-[var(--hover)]'
-                  }`}
-                >
-                  <span className="font-medium text-[var(--text)] line-clamp-1">{p.title}</span>
-                  <span className="text-[10px] text-[var(--muted)]">{p.floor ? `#${p.floor.name}` : ''}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Right: Sever toggle, + New post, and User Avatar */}
@@ -160,7 +166,7 @@ export default function TopBar({ onToggleMobileNav, isMobileNavOpen, onOpenCompo
         <SeverToggle />
 
         {user && (
-          <Button type="button" variant="default" size="sm" onClick={onOpenComposer} className="gap-1">
+          <Button type="button" variant="default" size="sm" onClick={onOpenComposer} className="gap-1 cursor-pointer">
             <Plus size={14} />
             <span className="hidden sm:inline">New post</span>
           </Button>
@@ -172,22 +178,34 @@ export default function TopBar({ onToggleMobileNav, isMobileNavOpen, onOpenCompo
               type="button"
               aria-label="User account"
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="cursor-pointer"
+              className="cursor-pointer focus:outline-none"
             >
               <Avatar user={user} />
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 top-11 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] p-1.5 space-y-1 text-xs z-50">
-                <Link to={`/u/${user.username}`} onClick={() => setShowUserMenu(false)} className="flex items-center gap-2 p-2 hover:bg-[var(--hover)] text-[var(--text)] rounded-[var(--radius-sm)]">
+              <div className="absolute right-0 top-11 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] p-1.5 space-y-1 text-xs z-50 shadow-md">
+                <Link
+                  to="/profile"
+                  onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 p-2 hover:bg-[var(--hover)] text-[var(--text)] rounded-[var(--radius-sm)] font-medium"
+                >
                   <User size={13} />
-                  <span>Profile</span>
+                  <span>View profile</span>
                 </Link>
-                <Link to="/saved" onClick={() => setShowUserMenu(false)} className="flex items-center gap-2 p-2 hover:bg-[var(--hover)] text-[var(--text)] rounded-[var(--radius-sm)]">
+                <Link
+                  to="/saved"
+                  onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 p-2 hover:bg-[var(--hover)] text-[var(--muted)] hover:text-[var(--text)] rounded-[var(--radius-sm)]"
+                >
                   <Bookmark size={13} />
                   <span>Saved</span>
                 </Link>
-                <Link to="/handbook" onClick={() => setShowUserMenu(false)} className="flex items-center gap-2 p-2 hover:bg-[var(--hover)] text-[var(--text)] rounded-[var(--radius-sm)]">
+                <Link
+                  to="/handbook"
+                  onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 p-2 hover:bg-[var(--hover)] text-[var(--muted)] hover:text-[var(--text)] rounded-[var(--radius-sm)]"
+                >
                   <BookOpen size={13} />
                   <span>Handbook</span>
                 </Link>
@@ -207,6 +225,7 @@ export default function TopBar({ onToggleMobileNav, isMobileNavOpen, onOpenCompo
             <Link to="/login">Sign in</Link>
           </Button>
         )}
+      </div>
       </div>
     </header>
   );

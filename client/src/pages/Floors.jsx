@@ -1,14 +1,31 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, Plus, X, Users, ArrowLeft, Radio } from 'lucide-react';
 import api from '../api/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useMode } from '../context/ModeContext';
 
-// Directory of company floors with search, create modal, and hairline rows
+const timeAgo = (dateStr) => {
+  if (!dateStr) return '';
+  const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 52) return `${weeks}w ago`;
+  const years = Math.floor(weeks / 52);
+  return `${years}y ago`;
+};
+
+// Directory of company floors formatted as rich Severance corporate cards
 export default function Floors() {
   const { mode } = useMode();
+  const navigate = useNavigate();
   const [floors, setFloors] = useState([]);
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -37,11 +54,18 @@ export default function Floors() {
     e.preventDefault();
     if (!name.trim()) return;
     try {
-      await api.post('/floors', { name: name.trim(), description });
+      const res = await api.post('/floors', { name: name.trim(), description: description.trim() });
       setName('');
       setDescription('');
       setShowCreate(false);
       fetchFloors();
+      if (res.data.floor) {
+        window.dispatchEvent(
+          new CustomEvent('linkedout:floor-joined', {
+            detail: { floorId: res.data.floor._id, slug: res.data.floor.slug, name: res.data.floor.name, joined: true }
+          })
+        );
+      }
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to create floor');
     }
@@ -49,12 +73,18 @@ export default function Floors() {
 
   const handleToggleJoin = async (id, slug) => {
     try {
-      await api.post(`/floors/${slug}/join`);
+      const res = await api.post(`/floors/${slug}/join`);
+      const target = floors.find((f) => f._id === id);
+      const isJoined = res.data.joined;
       setFloors((prev) =>
         prev.map((f) => {
           if (f._id !== id) return f;
-          const nextState = !f.isMember;
-          return { ...f, isMember: nextState, memberCount: f.memberCount + (nextState ? 1 : -1) };
+          return { ...f, isMember: isJoined, memberCount: res.data.memberCount };
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('linkedout:floor-joined', {
+          detail: { floorId: id, slug, name: target?.name, joined: isJoined }
         })
       );
     } catch (err) {
@@ -63,72 +93,163 @@ export default function Floors() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 text-xs space-y-4">
+    <div className="max-w-3xl mx-auto p-4 text-xs space-y-4">
+      {/* Top back navigation */}
+      <div>
+        <button
+          type="button"
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
+          className="inline-flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
+        >
+          <ArrowLeft size={14} />
+          <span>Back to feed</span>
+        </button>
+      </div>
+
       {/* Search input plus Create floor accent button */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="relative flex-1">
+      <div className="flex items-center justify-between gap-3 pb-2 border-b border-[var(--border)]">
+        <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3 top-2.5 text-[var(--muted)]" />
           <Input
-            placeholder="Search company floors"
+            placeholder="Search company floors..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9"
           />
         </div>
-        <Button variant="default" size="sm" onClick={() => setShowCreate(!showCreate)}>
+        <Button variant="default" size="sm" onClick={() => setShowCreate(true)}>
           <Plus size={14} /> Create floor
         </Button>
       </div>
 
-      {/* Create floor inline form */}
+      {/* Clean Create Floor Modal Dialog */}
       {showCreate && (
-        <form onSubmit={handleCreate} className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-3">
-          <h2 className="font-semibold text-sm text-[var(--text)]">Create a floor</h2>
-          <Input required placeholder="Company or department name" value={name} onChange={(e) => setName(e.target.value)} />
-          <Input placeholder="Short description" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <Button type="submit" variant="default" size="sm">Create floor</Button>
-        </form>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className="w-full max-w-md p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-4 shadow-xl">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+              <span className="font-semibold text-sm text-[var(--text)] font-head">
+                Create a floor
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="text-[var(--muted)] hover:text-[var(--text)] p-1 cursor-pointer transition-colors"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1">Company or Department Name</label>
+                <Input
+                  required
+                  placeholder="e.g. Lumon Industries or Data Refinement"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1">Short Description</label>
+                <Input
+                  placeholder="Briefly describe what happens on this floor..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowCreate(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="default" size="sm">
+                  Create floor
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
-      {/* List of floors as hairline rows */}
-      <div className="border-t border-[var(--border)]">
+      {/* Directory of Floors presented in rich card format with universal spacing */}
+      <div className="space-y-4">
         {loading ? (
-          <div className="py-8 text-center text-[var(--muted)]">Loading floors...</div>
+          <div className="py-12 text-center text-[var(--muted)]">Loading company floors...</div>
         ) : floors.length === 0 ? (
-          <div className="py-8 text-center text-[var(--muted)]">No company floors found.</div>
+          <div className="py-12 text-center text-[var(--muted)]">No company floors found. Click + Create floor to start one.</div>
         ) : (
           floors.map((f) => {
             const initials = f.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+            const creatorUsername = f.createdBy?.username || 'lumon_admin';
             return (
               <div
                 key={f._id}
-                className="py-3 px-2 border-b border-[var(--border)] flex items-center justify-between gap-3 hover:bg-[var(--hover)] transition-colors"
+                className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-3 shadow-sm hover:border-[var(--border-strong,var(--accent))] transition-all"
               >
-                <Link
-                  to={`/floors/${f.slug}`}
-                  className="flex items-center gap-3 min-w-0 group cursor-pointer flex-1"
-                >
-                  <div className="w-9 h-9 border border-[var(--border)] group-hover:border-[var(--accent)] flex items-center justify-center font-medium text-xs bg-[var(--accent-soft)] text-[var(--accent)] rounded-[var(--radius-sm)] shrink-0 transition-colors">
-                    {initials}
+                {/* Floor Header Bar */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-10 h-10 border border-[var(--border)] flex items-center justify-center font-bold text-xs bg-[var(--accent-soft)] text-[var(--accent)] rounded-[var(--radius-sm)] shrink-0">
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link
+                          to={`/floors/${f.slug}`}
+                          className="font-semibold text-sm text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate"
+                        >
+                          #{f.name}
+                        </Link>
+                        {f.category && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg)] border border-[var(--border)] text-[var(--muted)]">
+                            {f.category}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] mt-1 font-meta flex-wrap">
+                        <span>Created by</span>
+                        <Link
+                          to={`/u/${creatorUsername}`}
+                          className="text-[var(--text)] hover:underline font-medium"
+                        >
+                          @{creatorUsername}
+                        </Link>
+                        <span>•</span>
+                        <span>{timeAgo(f.createdAt) || 'recently'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <span className="font-medium text-sm text-[var(--text)] group-hover:text-[var(--accent)] transition-colors truncate block">
-                      #{f.name}
-                    </span>
-                    <span className="text-xs text-[var(--muted)] block tabular-nums">
-                      {f.memberCount} members
-                    </span>
-                  </div>
-                </Link>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  onClick={() => handleToggleJoin(f._id, f.slug)}
-                >
-                  {f.isMember ? 'Joined' : 'Join'}
-                </Button>
+                  <Button
+                    type="button"
+                    variant={f.isMember ? 'outline' : 'default'}
+                    size="sm"
+                    onClick={() => handleToggleJoin(f._id, f.slug)}
+                    className="shrink-0"
+                  >
+                    {f.isMember ? 'Joined' : '+ Join'}
+                  </Button>
+                </div>
+
+                {/* Floor Description */}
+                <p className="text-xs text-[var(--muted)] leading-relaxed">
+                  {f.description || 'Corporate department and community exchange floor for verified personnel.'}
+                </p>
+
+                {/* Floor Stats Footer */}
+                <div className="pt-2 border-t border-[var(--border)] flex items-center gap-4 text-[11px] text-[var(--muted)]">
+                  <div className="flex items-center gap-1.5">
+                    <Users size={13} className="text-[var(--muted)]" />
+                    <span className="tabular-nums font-medium text-[var(--text)]">{f.memberCount || 0}</span>
+                    <span>members enrolled</span>
+                  </div>
+                  {typeof f.postsToday === 'number' && f.postsToday > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <Radio size={13} className="text-[var(--accent)]" />
+                      <span className="tabular-nums font-medium text-[var(--text)]">{f.postsToday}</span>
+                      <span>transmissions today</span>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })

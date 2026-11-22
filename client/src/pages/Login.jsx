@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LinkedOutLogo from '../components/LinkedOutLogo';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -31,8 +32,10 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[var(--bg)] text-[var(--text)]">
       <div className="w-full max-w-sm p-6 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)]">
-        <div className="mb-6 text-center space-y-1">
-          <h1 className="text-xl font-semibold text-[var(--text)] font-head">Linked Out</h1>
+        <div className="mb-6 text-center space-y-2">
+          <div className="flex justify-center mb-1">
+            <LinkedOutLogo className="h-12 w-auto" />
+          </div>
           <p className="text-xs text-[var(--muted)]">Sign in to your account</p>
         </div>
 

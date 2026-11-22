@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import api from '../api/api';
 import PostComposer from '../components/PostComposer';
 import PostCard from '../components/PostCard';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 // Floor detail page with plain header section, composer, sort, and post rows
 export default function FloorPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [floor, setFloor] = useState(null);
   const [posts, setPosts] = useState([]);
   const [layoffs, setLayoffs] = useState([]);
@@ -50,7 +52,13 @@ export default function FloorPage() {
   const handleToggleJoin = async () => {
     try {
       const res = await api.post(`/floors/${slug}/join`);
-      setFloor((prev) => ({ ...prev, isMember: res.data.joined, memberCount: res.data.memberCount }));
+      const isJoined = res.data.joined;
+      setFloor((prev) => ({ ...prev, isMember: isJoined, memberCount: res.data.memberCount }));
+      window.dispatchEvent(
+        new CustomEvent('linkedout:floor-joined', {
+          detail: { floorId: floor._id, slug: floor.slug, name: floor.name, joined: isJoined }
+        })
+      );
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to update membership');
     }
@@ -70,10 +78,22 @@ export default function FloorPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 text-xs">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-6 items-start">
+      {/* Back button */}
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/floors'))}
+          className="inline-flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
+        >
+          <ArrowLeft size={14} />
+          <span>Back to floors</span>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6 items-start">
         {/* Main Feed Column */}
         <div className="space-y-4">
-          {/* Plain header section (no boxed card): floor name, description, member count, Join */}
+          {/* Floor Header */}
           <section className="space-y-2 pb-4 border-b border-[var(--border)]">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -91,71 +111,79 @@ export default function FloorPage() {
             </div>
           </section>
 
-          {/* Composer */}
-          <PostComposer defaultFloor={floor._id} onPostCreated={(p) => setPosts((prev) => [p, ...prev])} />
-
           {/* New / Top sort */}
-          <div className="flex items-center justify-end gap-3 px-3 py-1 border-b border-[var(--border)]">
-            <button
-              onClick={() => setSort('new')}
-              className={`cursor-pointer ${sort === 'new' ? 'font-semibold text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
-            >
-              New
-            </button>
-            <button
-              onClick={() => setSort('top')}
-              className={`cursor-pointer ${sort === 'top' ? 'font-semibold text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
-            >
-              Top
-            </button>
+          <div className="flex items-center justify-between px-1 border-b border-[var(--border)] pb-2">
+            <span className="text-xs font-semibold text-[var(--text)] font-head">Floor Feed</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSort('new')}
+                className={`cursor-pointer ${sort === 'new' ? 'font-semibold text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+              >
+                New
+              </button>
+              <button
+                onClick={() => setSort('top')}
+                className={`cursor-pointer ${sort === 'top' ? 'font-semibold text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+              >
+                Top
+              </button>
+            </div>
           </div>
 
-          {/* Post rows */}
-          <div>
-            {posts.length === 0 ? (
-              <div className="py-12 text-center text-[var(--muted)]">No posts on this floor yet. Write the first one.</div>
-            ) : (
-              posts.map((post) => (
+          {/* Post cards with universal spacing */}
+          {posts.length === 0 ? (
+            <div className="py-12 text-center text-[var(--muted)]">No transmissions on this floor yet. Click + New post to start one.</div>
+          ) : (
+            <div className="space-y-4">
+              {posts.map((post) => (
                 <PostCard key={post._id} post={post} onVote={handleVote} onDelete={(id) => setPosts((p) => p.filter((x) => x._id !== id))} />
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Right rail: About, Severed at this floor, Hiring now */}
-        <aside className="space-y-6">
-          <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
-            <h2 className="font-semibold text-xs text-[var(--text)]">About</h2>
-            <p className="text-xs text-[var(--muted)] leading-relaxed">{floor.description || 'Community floor for personnel.'}</p>
-          </section>
+        {/* Unified, well-spaced Right Rail Card: About, Severed at this floor, Hiring now */}
+        <aside className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-5 shadow-sm">
+          {/* About Section */}
+          <div className="space-y-1.5 pb-4 border-b border-[var(--border)]">
+            <h2 className="font-semibold text-xs text-[var(--text)] font-head">About</h2>
+            <p className="text-xs text-[var(--muted)] leading-relaxed">{floor.description || 'Community floor for corporate personnel.'}</p>
+            <span className="text-[11px] text-[var(--muted)] block tabular-nums pt-1">{floor.memberCount} members enrolled</span>
+          </div>
 
-          <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
-            <h2 className="font-semibold text-xs text-[var(--text)]">Severed at this floor</h2>
+          {/* Severed at this floor Section */}
+          <div className="space-y-2 pb-4 border-b border-[var(--border)]">
+            <h2 className="font-semibold text-xs text-[var(--text)] font-head">Severed at this floor</h2>
             {layoffs.length === 0 ? (
               <p className="text-xs text-[var(--muted)]">No recorded reports.</p>
             ) : (
-              layoffs.slice(0, 3).map((l) => (
-                <div key={l._id} className="text-xs border-b border-[var(--border)] pb-1 last:border-b-0">
-                  <span className="font-medium text-[var(--text)]">{l.peopleAffected || 0} affected</span>
-                  <span className="text-[10px] text-[var(--muted)] block">{new Date(l.date).toLocaleDateString()}</span>
-                </div>
-              ))
+              <div className="space-y-2">
+                {layoffs.slice(0, 3).map((l) => (
+                  <div key={l._id} className="text-xs py-1 border-b border-[var(--border)] last:border-b-0 space-y-0.5">
+                    <span className="font-medium text-[var(--text)] block">{l.peopleAffected || 0} affected</span>
+                    <span className="text-[10px] text-[var(--muted)] font-meta block">{new Date(l.date).toLocaleDateString()}</span>
+                  </div>
+                ))}
+              </div>
             )}
-          </section>
+          </div>
 
-          <section className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
-            <h2 className="font-semibold text-xs text-[var(--text)]">Hiring now</h2>
+          {/* Hiring now Section */}
+          <div className="space-y-2">
+            <h2 className="font-semibold text-xs text-[var(--text)] font-head">Hiring now</h2>
             {hiring.length === 0 ? (
               <p className="text-xs text-[var(--muted)]">No open positions reported.</p>
             ) : (
-              hiring.slice(0, 3).map((j) => (
-                <div key={j._id} className="text-xs border-b border-[var(--border)] pb-1 last:border-b-0">
-                  <a href={j.link} target="_blank" rel="noreferrer" className="font-medium text-[var(--text)] hover:underline block">{j.title}</a>
-                  <span className="text-[10px] text-[var(--muted)] block">{j.location || 'Remote'}</span>
-                </div>
-              ))
+              <div className="space-y-2">
+                {hiring.slice(0, 3).map((j) => (
+                  <div key={j._id} className="text-xs py-1 border-b border-[var(--border)] last:border-b-0 space-y-0.5">
+                    <a href={j.link} target="_blank" rel="noreferrer" className="font-medium text-[var(--text)] hover:underline block">{j.title}</a>
+                    <span className="text-[10px] text-[var(--muted)] block">{j.location || 'Remote'}</span>
+                  </div>
+                ))}
+              </div>
             )}
-          </section>
+          </div>
         </aside>
       </div>
     </div>

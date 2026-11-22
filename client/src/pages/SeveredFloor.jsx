@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, X } from 'lucide-react';
 import api from '../api/api';
 import LayoffRow from '../components/LayoffRow';
 import { Input } from '@/components/ui/input';
@@ -14,13 +13,14 @@ const renderSparkline = (numbers = []) => {
   return numbers.slice(-30).map((v) => blocks[Math.min(Math.floor((v / max) * blocks.length), blocks.length - 1)]).join('');
 };
 
-// Severed floor tracker showing workforce reduction ledger and confirmation state
+// Severed floor workforce reduction ledger with cards, modal submission, and no wellness clutter
 export default function SeveredFloor() {
   const [layoffs, setLayoffs] = useState([]);
   const [overview, setOverview] = useState({ severedThisMonth: 0, severedByDay: [] });
   const [search, setSearch] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [company, setCompany] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -44,30 +44,39 @@ export default function SeveredFloor() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!company.trim()) return;
+    if (!company.trim() || submitting) return;
+    setSubmitting(true);
     try {
       await api.post('/layoffs', {
         company: company.trim(),
         date,
         peopleAffected: parseInt(peopleAffected, 10) || 0,
-        sourceUrl,
-        note
+        sourceUrl: sourceUrl.trim(),
+        note: note.trim()
       });
       setCompany('');
       setPeopleAffected('');
       setSourceUrl('');
       setNote('');
-      setShowAddForm(false);
+      setShowAddModal(false);
       loadData();
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to submit report');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleConfirm = async (id) => {
     try {
       await api.post(`/layoffs/${id}/confirm`);
-      setLayoffs((prev) => prev.map((l) => (l._id === id ? { ...l, confirmedByMe: true, confirmCount: (l.confirmCount || 0) + 1 } : l)));
+      setLayoffs((prev) =>
+        prev.map((l) =>
+          l._id === id
+            ? { ...l, confirmedByMe: true, confirmCount: (l.confirmCount || 0) + 1 }
+            : l
+        )
+      );
     } catch (e) {
       alert(e.response?.data?.error || 'Failed to confirm');
     }
@@ -76,8 +85,8 @@ export default function SeveredFloor() {
   const filtered = layoffs.filter((l) => !search || l.company.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4 text-xs">
-      {/* Header: count as 42px tabular number, label in sentence case */}
+    <div className="space-y-6 max-w-3xl mx-auto p-4 text-xs">
+      {/* Header: count as 42px tabular number with sparkline */}
       <section className="space-y-1 pb-4 border-b border-[var(--border)]">
         <div className="text-[42px] leading-tight font-semibold tabular-nums text-[var(--text)] font-head">
           {overview.severedThisMonth.toLocaleString()}
@@ -90,80 +99,122 @@ export default function SeveredFloor() {
         )}
       </section>
 
-      {/* Toolbar: search input on --surface, plus one accent button "Add report" */}
+      {/* Toolbar: search input + Add report button */}
       <div className="flex items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3 top-2.5 text-[var(--muted)]" />
           <Input
-            placeholder="Search company"
+            placeholder="Search company records"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9"
           />
         </div>
-        <Button variant="default" size="sm" onClick={() => setShowAddForm(!showAddForm)}>
+        <Button variant="default" size="sm" onClick={() => setShowAddModal(true)}>
           <Plus size={14} /> Add report
         </Button>
       </div>
 
-      {/* Add-report form: inline panel on --surface, sentence-case labels */}
-      {showAddForm && (
-        <form onSubmit={handleSubmit} className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs text-[var(--muted)] mb-1">Company</label>
-              <Input required value={company} onChange={(e) => setCompany(e.target.value)} />
+      {/* Separate Add Report Modal Window with "X" close button */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className="w-full max-w-lg p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-4 shadow-xl">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+              <span className="font-semibold text-sm text-[var(--text)] font-head">
+                Record Workforce Reduction Report
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="text-[var(--muted)] hover:text-[var(--text)] p-1 cursor-pointer transition-colors"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
             </div>
-            <div>
-              <label className="block text-xs text-[var(--muted)] mb-1">Date</label>
-              <Input required type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs text-[var(--muted)] mb-1">People affected</label>
-              <Input required type="number" value={peopleAffected} onChange={(e) => setPeopleAffected(e.target.value)} />
-            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[var(--muted)] mb-1">Company</label>
+                  <Input
+                    required
+                    placeholder="e.g. Lumon Industries"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[var(--muted)] mb-1">Date</label>
+                  <Input
+                    required
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1">People affected</label>
+                <Input
+                  required
+                  type="number"
+                  placeholder="e.g. 150"
+                  value={peopleAffected}
+                  onChange={(e) => setPeopleAffected(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1">Source URL</label>
+                <Input
+                  type="url"
+                  placeholder="https://..."
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1">Note / Department context</label>
+                <Input
+                  placeholder="e.g. Engineering & Operations"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddModal(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting} variant="default" size="sm">
+                  {submitting ? 'Submitting...' : 'Submit report'}
+                </Button>
+              </div>
+            </form>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-[var(--muted)] mb-1">Source link</label>
-              <Input type="url" placeholder="https://..." value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs text-[var(--muted)] mb-1">Note</label>
-              <Input placeholder="Department or context" value={note} onChange={(e) => setNote(e.target.value)} />
-            </div>
-          </div>
-          <Button type="submit" variant="default" size="sm">Submit</Button>
-        </form>
+        </div>
       )}
 
-      {/* Main Two-Column View with Right Rail */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-6 items-start">
-        {/* List: hairline rows */}
-        <div>
-          {loading ? (
-            <div className="py-8 text-center text-[var(--muted)]">Loading ledger...</div>
-          ) : filtered.length === 0 ? (
-            <div className="py-8 text-center text-[var(--muted)]">No reports match your search.</div>
-          ) : (
-            filtered.map((item) => (
-              <LayoffRow key={item._id} layoff={item} onConfirm={handleConfirm} />
-            ))
-          )}
-        </div>
-
-        {/* Right Rail: Need to talk? with a link to Wellness */}
-        <aside className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
-          <h3 className="font-semibold text-xs text-[var(--text)]">Need to talk?</h3>
-          <p className="text-xs text-[var(--muted)] leading-relaxed">
-            Support hotlines and career transition guides are available in our Wellness session.
-          </p>
-          <div className="pt-1">
-            <Button asChild variant="outline" size="xs" className="w-full">
-              <Link to="/wellness">Wellness</Link>
-            </Button>
-          </div>
-        </aside>
+      {/* Reports List formatted as spaced cards */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="py-12 text-center text-[var(--muted)]">Loading reduction ledger...</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center text-[var(--muted)]">No reduction reports match your search.</div>
+        ) : (
+          filtered.map((item) => (
+            <LayoffRow key={item._id} layoff={item} onConfirm={handleConfirm} />
+          ))
+        )}
       </div>
     </div>
   );

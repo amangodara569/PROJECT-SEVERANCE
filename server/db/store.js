@@ -236,38 +236,52 @@ const remove = (name, id) => {
 // Handles atomic casting and toggling of votes, updating score by delta
 const castVote = ({ userId, targetType, targetId, value }) => {
   data.votes = data.votes || [];
-  const numericValue = value > 0 ? 1 : -1;
   const existingIndex = data.votes.findIndex(v => v.user === userId && v.targetType === targetType && v.targetId === targetId);
 
   let scoreDiff = 0;
   let finalVote = 0;
 
-  if (existingIndex === -1) {
-    const voteRecord = {
-      _id: crypto.randomUUID(),
-      user: userId,
-      targetType,
-      targetId,
-      value: numericValue,
-      createdAt: new Date().toISOString()
-    };
-    data.votes.push(voteRecord);
-    syncToAtlas('insert', 'votes', voteRecord);
-    scoreDiff = numericValue;
-    finalVote = numericValue;
-  } else {
-    const existing = data.votes[existingIndex];
-    if (existing.value === numericValue) {
+  if (value === 0) {
+    // Explicit unvote / vote cancellation
+    if (existingIndex !== -1) {
+      const existing = data.votes[existingIndex];
+      scoreDiff = -existing.value;
       const voteId = existing._id;
       data.votes.splice(existingIndex, 1);
       syncToAtlas('delete', 'votes', voteId);
-      scoreDiff = -numericValue;
-      finalVote = 0;
-    } else {
-      scoreDiff = numericValue - existing.value;
-      existing.value = numericValue;
-      syncToAtlas('update', 'votes', existing._id, { value: numericValue });
+    }
+    finalVote = 0;
+  } else {
+    const numericValue = value > 0 ? 1 : -1;
+    if (existingIndex === -1) {
+      const voteRecord = {
+        _id: crypto.randomUUID(),
+        user: userId,
+        targetType,
+        targetId,
+        value: numericValue,
+        createdAt: new Date().toISOString()
+      };
+      data.votes.push(voteRecord);
+      syncToAtlas('insert', 'votes', voteRecord);
+      scoreDiff = numericValue;
       finalVote = numericValue;
+    } else {
+      const existing = data.votes[existingIndex];
+      if (existing.value === numericValue) {
+        // Clicking same button again removes vote
+        const voteId = existing._id;
+        data.votes.splice(existingIndex, 1);
+        syncToAtlas('delete', 'votes', voteId);
+        scoreDiff = -numericValue;
+        finalVote = 0;
+      } else {
+        // Switching vote from +1 to -1 or vice versa
+        scoreDiff = numericValue - existing.value;
+        existing.value = numericValue;
+        syncToAtlas('update', 'votes', existing._id, { value: numericValue });
+        finalVote = numericValue;
+      }
     }
   }
 

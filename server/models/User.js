@@ -1,6 +1,7 @@
 // Factory function creating a plain User object with default fields
 const makeUser = (data = {}) => {
   return {
+    name: data.name ? data.name.trim() : '',
     username: data.username ? data.username.trim() : '',
     email: data.email ? data.email.trim().toLowerCase() : '',
     passwordHash: data.passwordHash || '',

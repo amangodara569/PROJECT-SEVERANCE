@@ -30,6 +30,17 @@ const getUserIdFromHeader = (req) => {
 // Formats floor object for privacy: returns memberCount, never member IDs
 const sanitizeFloorPublic = (floor, postsTodayMap = {}) => {
   const members = floor.members || [];
+  let creator = null;
+  if (floor.createdBy) {
+    const creatorUser = store.findById('users', floor.createdBy);
+    if (creatorUser) {
+      creator = {
+        _id: creatorUser._id,
+        username: creatorUser.username,
+        name: creatorUser.name || creatorUser.username
+      };
+    }
+  }
   return {
     _id: floor._id,
     name: floor.name,
@@ -39,7 +50,8 @@ const sanitizeFloorPublic = (floor, postsTodayMap = {}) => {
     postsToday: postsTodayMap[floor._id] || 0,
     memberCount: members.length,
     memberIds: members, // used internally to compute isMember after cache
-    createdAt: floor.createdAt
+    createdBy: creator || { username: 'lumon_admin', name: 'Lumon Corporate' },
+    createdAt: floor.createdAt || new Date().toISOString()
   };
 };
 
@@ -186,15 +198,29 @@ router.get('/:slug', (req, res) => {
     const members = floor.members || [];
     const isMember = currentUserId ? members.some((m) => m.toString() === currentUserId.toString()) : false;
 
+    let creator = null;
+    if (floor.createdBy) {
+      const creatorUser = store.findById('users', floor.createdBy);
+      if (creatorUser) {
+        creator = {
+          _id: creatorUser._id,
+          username: creatorUser.username,
+          name: creatorUser.name || creatorUser.username
+        };
+      }
+    }
+
     res.json({
       floor: {
         _id: floor._id,
         name: floor.name,
         slug: floor.slug,
         description: floor.description || '',
+        category: floor.category || 'Tech',
         memberCount: members.length,
         isMember,
-        createdAt: floor.createdAt
+        createdBy: creator || { username: 'lumon_admin', name: 'Lumon Corporate' },
+        createdAt: floor.createdAt || new Date().toISOString()
       }
     });
   } catch (error) {
@@ -221,14 +247,16 @@ router.post('/:slug/join', auth, (req, res) => {
       joinedFloors = joinedFloors.filter((id) => id.toString() !== floor._id.toString());
       store.update('floors', floor._id, { members });
       if (user) store.update('users', userId, { joinedFloors });
-      cache.del('floors:list');
+      cache.del('floors:list:v2:outie');
+      cache.del('floors:list:v2:innie');
       return res.json({ joined: false, memberCount: members.length });
     } else {
       members.push(userId);
       if (!joinedFloors.includes(floor._id)) joinedFloors.push(floor._id);
       store.update('floors', floor._id, { members });
       if (user) store.update('users', userId, { joinedFloors });
-      cache.del('floors:list');
+      cache.del('floors:list:v2:outie');
+      cache.del('floors:list:v2:innie');
       return res.json({ joined: true, memberCount: members.length });
     }
   } catch (error) {

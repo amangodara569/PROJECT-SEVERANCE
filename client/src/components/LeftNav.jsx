@@ -3,11 +3,9 @@ import { NavLink, Link } from 'react-router-dom';
 import { Home, Layers, TrendingDown, Briefcase, Bookmark, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
-import Avatar from './Avatar';
 import api from '../api/api';
-import { Button } from '@/components/ui/button';
 
-// Sticky left navigation with primary routes, joined floors, and user summary
+// Left navigation with primary routes and joined floors (cleaned: no redundant profile card or footer links)
 export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) {
   const { user } = useAuth();
   const { mode } = useMode();
@@ -26,6 +24,23 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
     loadFloors();
   }, [user, mode]);
 
+  // Live synchronization: reflect floor join/leave instantly across the app
+  useEffect(() => {
+    const handleFloorEvent = (e) => {
+      const { floorId, slug, name, joined } = e.detail || {};
+      if (joined) {
+        setJoinedFloors((prev) => {
+          if (prev.some((f) => f._id === floorId || f.slug === slug)) return prev;
+          return [...prev, { _id: floorId, slug, name: name || slug, memberCount: 1, isMember: true }];
+        });
+      } else {
+        setJoinedFloors((prev) => prev.filter((f) => f._id !== floorId && f.slug !== slug));
+      }
+    };
+    window.addEventListener('linkedout:floor-joined', handleFloorEvent);
+    return () => window.removeEventListener('linkedout:floor-joined', handleFloorEvent);
+  }, []);
+
   const primaryNav = [
     { label: 'Home', path: '/', icon: Home },
     { label: 'Floors', path: '/floors', icon: Layers },
@@ -36,10 +51,10 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
 
   return (
     <aside
-      className={`flex flex-col justify-between text-xs bg-[var(--bg)] ${
+      className={`text-xs bg-[var(--bg)] ${
         isMobile
           ? 'w-72 h-full p-4 overflow-y-auto'
-          : 'w-full h-[calc(100vh-56px)] sticky top-14 p-3 overflow-y-auto overflow-x-hidden'
+          : 'w-full sticky top-14 p-3 overflow-y-auto overflow-x-hidden'
       }`}
     >
       <div className="space-y-6">
@@ -107,45 +122,31 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
             )}
           </div>
         </div>
-      </div>
 
-      {/* Bottom Section: Profile & Meta Links */}
-      <div className="pt-4 border-t border-[var(--border)] space-y-3">
-        {user ? (
+        {/* Informational Footer Links */}
+        <footer className="pt-4 border-t border-[var(--border)] px-3 flex flex-wrap items-center gap-3 text-[11px] text-[var(--muted)]">
           <Link
-            to={`/u/${user.username}`}
+            to="/handbook"
             onClick={isMobile ? onCloseMobile : undefined}
-            className="p-2 hover:bg-[var(--hover)] rounded-[var(--radius-sm)] flex items-center gap-2.5 transition-colors"
+            className="hover:text-[var(--text)] transition-colors"
           >
-            <Avatar user={user} />
-            <div className="min-w-0 flex-1">
-              <span className="font-medium text-xs truncate block text-[var(--text)]">
-                {user.name || `@${user.username}`}
-              </span>
-              <span className="text-[10px] text-[var(--muted)] truncate block">
-                {user.status || 'Employed'}
-              </span>
-            </div>
-          </Link>
-        ) : (
-          <div className="p-2 text-center space-y-2">
-            <Button asChild variant="default" size="sm" className="w-full">
-              <Link to="/login" onClick={isMobile ? onCloseMobile : undefined}>Sign in</Link>
-            </Button>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-[11px] text-[var(--muted)] px-2">
-          <Link to="/handbook" onClick={isMobile ? onCloseMobile : undefined} className="hover:text-[var(--text)]">
             Handbook
           </Link>
-          <Link to="/wellness" onClick={isMobile ? onCloseMobile : undefined} className="hover:text-[var(--text)]">
+          <Link
+            to="/wellness"
+            onClick={isMobile ? onCloseMobile : undefined}
+            className="hover:text-[var(--text)] transition-colors"
+          >
             Wellness
           </Link>
-          <Link to="/severed-floor" onClick={isMobile ? onCloseMobile : undefined} className="hover:text-[var(--text)]">
-            Severed Floor
+          <Link
+            to="/handbook"
+            onClick={isMobile ? onCloseMobile : undefined}
+            className="hover:text-[var(--text)] transition-colors"
+          >
+            Privacy
           </Link>
-        </div>
+        </footer>
       </div>
     </aside>
   );

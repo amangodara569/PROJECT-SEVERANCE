@@ -19,6 +19,10 @@ export const ModeProvider = ({ children }) => {
       document.documentElement.classList.add('dark');
       document.documentElement.setAttribute('data-theme', 'dark');
     }
+    const favicon = document.getElementById('app-favicon') || document.querySelector("link[rel*='icon']");
+    if (favicon) {
+      favicon.href = mode === 'innie' ? '/favicon-green.png' : '/favicon-gold.png';
+    }
     localStorage.setItem('mode', mode);
   }, [mode]);
 

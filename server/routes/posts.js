@@ -100,6 +100,57 @@ router.get('/', async (req, res) => {
       floorId = matchedFloor ? matchedFloor._id : floor;
     }
 
+    const isMyFloorsTab = req.query.tab === 'my-floors';
+    const currentUserId = getUserIdFromHeader(req);
+
+    if (isMyFloorsTab) {
+      let posts = store.getAll('posts').filter((p) => !p.hidden);
+      if (mode === 'innie') {
+        posts = posts.filter((p) => Boolean(p.isInnie));
+      } else {
+        posts = posts.filter((p) => !p.isInnie);
+      }
+
+      const u = currentUserId ? store.findById('users', currentUserId) : null;
+      const joinedIds = (u?.joinedFloors || []).map((id) => id.toString());
+      posts = posts.filter((p) => p.floor && joinedIds.includes(p.floor.toString()));
+
+      if (sort === 'top') {
+        posts.sort((a, b) => (b.score || 0) - (a.score || 0) || b._id.localeCompare(a._id));
+      } else {
+        posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt) || b._id.localeCompare(a._id));
+      }
+
+      const slice = posts.slice(0, limit);
+      const postIds = slice.map((p) => p._id);
+      const votesMap = store.getUserVotesMap(currentUserId, 'post', postIds);
+      const savedIds = (u && Array.isArray(u.savedPosts)) ? u.savedPosts : [];
+
+      const enriched = slice.map(sanitizePostPublic).map((post) => {
+        const myVote = votesMap[post._id] || 0;
+        const authorId = post.author?._id || post.author;
+        const isOwner = Boolean(
+          currentUserId && (
+            (!post.isInnie && authorId && authorId.toString() === currentUserId.toString()) ||
+            (post.isInnie && u?.innieHandle && post.innieHandle === u.innieHandle)
+          )
+        );
+        return {
+          ...post,
+          myVote,
+          userVote: myVote,
+          isOwner: Boolean(isOwner),
+          isSaved: savedIds.includes(post._id)
+        };
+      });
+
+      return res.json({
+        posts: enriched,
+        items: enriched,
+        nextCursor: null
+      });
+    }
+
     const floorVer = cache.getFloorVersion(floorId);
     const cacheKey = `feed:${mode}:${floorId}:${sort}:${timeFilter}:${floorVer}:${cursor || 'start'}:${limit}`;
 
@@ -131,13 +182,8 @@ router.get('/', async (req, res) => {
       if (sort === 'top') {
         posts.sort((a, b) => (b.score || 0) - (a.score || 0) || b._id.localeCompare(a._id));
       } else {
-        // Pinned posts come first in the All tab
-        posts.sort((a, b) => {
-          if (floorId === 'all' && Boolean(b.pinned) !== Boolean(a.pinned)) {
-            return b.pinned ? 1 : -1;
-          }
-          return new Date(b.createdAt) - new Date(a.createdAt) || b._id.localeCompare(a._id);
-        });
+        // Pure recency sort: newest created posts strictly at the top
+        posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt) || b._id.localeCompare(a._id));
       }
 
       const decoded = decodeCursor(cursor);
@@ -168,7 +214,6 @@ router.get('/', async (req, res) => {
       return { items, nextCursor };
     });
 
-    const currentUserId = getUserIdFromHeader(req);
     const postIds = pageData.items.map((p) => p._id);
     const votesMap = store.getUserVotesMap(currentUserId, 'post', postIds);
 
@@ -180,7 +225,14 @@ router.get('/', async (req, res) => {
 
     const enrichedItems = pageData.items.map((post) => {
       const myVote = votesMap[post._id] || 0;
-      const isOwner = currentUserId && !post.isInnie && post.author && post.author._id === currentUserId;
+      const authorId = post.author?._id || post.author;
+      const u = currentUserId ? store.findById('users', currentUserId) : null;
+      const isOwner = Boolean(
+        currentUserId && (
+          (!post.isInnie && authorId && authorId.toString() === currentUserId.toString()) ||
+          (post.isInnie && u?.innieHandle && post.innieHandle === u.innieHandle)
+        )
+      );
       return {
         ...post,
         myVote,
@@ -316,7 +368,14 @@ router.get('/:id', async (req, res) => {
     const currentUserId = getUserIdFromHeader(req);
     const votesMap = store.getUserVotesMap(currentUserId, 'post', [cachedPost._id]);
     const myVote = votesMap[cachedPost._id] || 0;
-    const isOwner = currentUserId && !cachedPost.isInnie && cachedPost.author && cachedPost.author._id === currentUserId;
+    const u = currentUserId ? store.findById('users', currentUserId) : null;
+    const authorId = cachedPost.author?._id || cachedPost.author;
+    const isOwner = Boolean(
+      currentUserId && (
+        (!cachedPost.isInnie && authorId && authorId.toString() === currentUserId.toString()) ||
+        (cachedPost.isInnie && u?.innieHandle && cachedPost.innieHandle === u.innieHandle)
+      )
+    );
 
     res.json({
       post: {
@@ -355,22 +414,86 @@ router.post('/:id/vote', auth, (req, res) => {
   }
 });
 
-// DELETE /api/posts/:id - Delete own post and invalidate cache
+// PUT /api/posts/:id - Edit own post
+router.put('/:id', auth, (req, res) => {
+  try {
+    const post = store.findById('posts', req.params.id);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    const currentUserId = (req.user.id || req.user._id || '').toString();
+    const dbUser = store.findById('users', currentUserId);
+    const authorId = post.author && typeof post.author === 'object'
+      ? (post.author._id || post.author.id || '').toString()
+      : (post.author ? post.author.toString() : '');
+
+    const isOwner = (authorId && authorId === currentUserId) ||
+      (post.isInnie && dbUser?.innieHandle && post.innieHandle === dbUser.innieHandle) ||
+      (post.author?.username && dbUser?.username && post.author.username === dbUser.username);
+
+    if (!isOwner) {
+      return res.status(403).json({ error: 'You are not authorized to edit this post. Only the author can perform this action.' });
+    }
+
+    const { title, body } = req.body;
+    if (!title || !title.trim() || !body || !body.trim()) {
+      return res.status(400).json({ error: 'Title and body cannot be empty' });
+    }
+
+    const contentCheck = checkContent(title + ' ' + body);
+    if (contentCheck.blocked) {
+      return res.status(400).json({ error: contentCheck.reason, isBreakRoom: true });
+    }
+
+    const updated = store.update('posts', req.params.id, {
+      title: title.trim(),
+      body: body.trim(),
+      updatedAt: new Date().toISOString()
+    });
+
+    cache.del(`post:${req.params.id}`);
+    cache.bumpFloorVersion(post.floor || 'all');
+    cache.bumpFloorVersion('all');
+
+    res.json({ success: true, post: sanitizePostPublic(updated) });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Error updating post' });
+  }
+});
+
+// DELETE /api/posts/:id - Delete own post, associated comments, and invalidate cache
 router.delete('/:id', auth, (req, res) => {
   try {
     const post = store.findById('posts', req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
-    if (post.author && post.author.toString() !== req.user.id.toString()) {
-      return res.status(403).json({ error: 'You can only delete your own posts' });
+    const currentUserId = (req.user.id || req.user._id || '').toString();
+    const dbUser = store.findById('users', currentUserId);
+    const authorId = post.author && typeof post.author === 'object'
+      ? (post.author._id || post.author.id || '').toString()
+      : (post.author ? post.author.toString() : '');
+
+    const isOwner = (authorId && authorId === currentUserId) ||
+      (post.isInnie && dbUser?.innieHandle && post.innieHandle === dbUser.innieHandle) ||
+      (post.author?.username && dbUser?.username && post.author.username === dbUser.username);
+
+    if (!isOwner) {
+      return res.status(403).json({ error: 'You are not authorized to delete this post. Only the author can perform this action.' });
     }
 
+    // Recursively delete all associated comments for this post
+    const allComments = store.getAll('comments');
+    const postComments = allComments.filter((c) => c.post && c.post.toString() === req.params.id.toString());
+    for (const c of postComments) {
+      store.remove('comments', c._id);
+    }
+
+    // Remove the post from store and sync deletion to Atlas
     store.remove('posts', req.params.id);
     cache.del(`post:${req.params.id}`);
     cache.bumpFloorVersion(post.floor || 'all');
     cache.bumpFloorVersion('all');
 
-    res.json({ message: 'Post deleted successfully' });
+    res.json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Error deleting post' });
   }

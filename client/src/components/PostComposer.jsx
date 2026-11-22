@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-// Expanding composer: compact row on focus transforms to full post editor
-export default function PostComposer({ defaultFloor = '', onPostCreated }) {
-  const [isOpen, setIsOpen] = useState(false);
+// Expanding composer: compact row on focus transforms to full post editor, or direct full editor if initialOpen=true
+export default function PostComposer({ defaultFloor = '', onPostCreated, initialOpen = false, onCancel }) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [type, setType] = useState('vent');
@@ -23,10 +23,10 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
   const { isInnie } = useMode();
 
   useEffect(() => {
-    if (isOpen && floors.length === 0) {
+    if ((isOpen || initialOpen) && floors.length === 0) {
       api.get('/floors').then((res) => setFloors(res.data.floors || [])).catch(() => {});
     }
-  }, [isOpen, floors.length]);
+  }, [isOpen, initialOpen, floors.length]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,7 +44,9 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
       });
       setTitle('');
       setBody('');
-      setIsOpen(false);
+      if (!initialOpen) {
+        setIsOpen(false);
+      }
       if (onPostCreated) onPostCreated(res.data.post);
     } catch (err) {
       if (err.response?.data?.isBreakRoom) {
@@ -54,6 +56,14 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      setIsOpen(false);
     }
   };
 
@@ -152,7 +162,7 @@ export default function PostComposer({ defaultFloor = '', onPostCreated }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsOpen(false)}>
+              <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting} variant="default" size="sm">
