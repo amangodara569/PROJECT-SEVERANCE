@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Plus, X, Users, ArrowLeft, Radio } from 'lucide-react';
+import { Search, Plus, X, Users, ArrowLeft, Radio, Check } from 'lucide-react';
 import api from '../api/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -109,12 +109,13 @@ export default function Floors() {
       {/* Search input plus Create floor accent button */}
       <div className={`flex items-center justify-between gap-3 pb-3 ${mode === 'outie' ? 'border-b border-[#1E2D28]' : 'border-b border-[var(--border)]'}`}>
         <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-2.5 text-[var(--muted)]" />
-          <Input
+          <Search size={14} className="absolute left-2.5 top-2 text-[var(--muted)] pointer-events-none" />
+          <input
+            type="text"
             placeholder="Search company floors..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`pl-9 h-9 ${mode === 'outie' ? 'bg-[#141414] border-[#1E2D28] text-[#E5E5E5]' : ''}`}
+            className="w-full h-8 pl-8 pr-3 text-xs bg-transparent border-none text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none"
           />
         </div>
         <Button
@@ -211,14 +212,16 @@ export default function Floors() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link
-                          to={`/floors/${f.slug}`}
-                          className={`font-semibold text-sm transition-colors truncate ${
-                            mode === 'outie' ? 'text-[#5A7EE6] hover:underline' : 'text-[var(--text)] hover:text-[var(--accent)]'
-                          }`}
-                        >
-                          #{f.name}
-                        </Link>
+                        <h2 className="text-base sm:text-[17px] font-bold font-head leading-snug">
+                          <Link
+                            to={`/floors/${f.slug}`}
+                            className={`transition-colors truncate ${
+                              mode === 'outie' ? 'text-[#5A7EE6] hover:underline' : 'text-[var(--text)] hover:text-[var(--accent)]'
+                            }`}
+                          >
+                            #{f.name}
+                          </Link>
+                        </h2>
                         {f.category && (
                           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg)] border border-[var(--border)] text-[var(--muted)]">
                             {f.category}
@@ -239,17 +242,28 @@ export default function Floors() {
                     </div>
                   </div>
 
-                  <Button
+                  <button
                     type="button"
-                    variant={f.isMember ? 'outline' : 'default'}
-                    size="sm"
                     onClick={() => handleToggleJoin(f._id, f.slug)}
-                    className={`shrink-0 ${
-                      mode === 'outie' && !f.isMember ? 'bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full' : ''
-                    }`}
+                    className={
+                      mode === 'outie'
+                        ? (f.isMember
+                            ? "border border-[#1E2D28] text-[#7A8080] hover:text-[#E5E5E5] rounded-full text-xs px-3.5 py-1.5 font-medium shrink-0 cursor-pointer transition-colors flex items-center gap-1"
+                            : "bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full text-xs px-3.5 py-1.5 shrink-0 cursor-pointer transition-opacity flex items-center gap-1")
+                        : (f.isMember
+                            ? "border border-[var(--border)] text-[var(--muted)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium flex items-center gap-1"
+                            : "bg-[var(--accent)] text-[var(--accent-ink)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-bold flex items-center gap-1")
+                    }
                   >
-                    {f.isMember ? 'Joined' : '+ Join'}
-                  </Button>
+                    {f.isMember ? (
+                      <>
+                        <Check size={12} />
+                        <span>Joined</span>
+                      </>
+                    ) : (
+                      '+ Join'
+                    )}
+                  </button>
                 </div>
 
                 {/* Floor Description */}

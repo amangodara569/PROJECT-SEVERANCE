@@ -104,12 +104,13 @@ export default function SeveredFloor() {
       {/* Toolbar: search input + Add report button */}
       <div className="flex items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-2.5 text-[var(--muted)]" />
-          <Input
+          <Search size={14} className="absolute left-2.5 top-2 text-[var(--muted)] pointer-events-none" />
+          <input
+            type="text"
             placeholder="Search company records"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`pl-9 h-9 ${mode === 'outie' ? 'bg-[#141414] border-[#1E2D28] text-[#E5E5E5]' : ''}`}
+            className="w-full h-8 pl-8 pr-3 text-xs bg-transparent border-none text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none"
           />
         </div>
         <Button

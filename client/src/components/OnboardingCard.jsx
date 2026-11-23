@@ -40,7 +40,7 @@ export default function OnboardingCard({ joinedCount = 0, postCount = 0 }) {
       <div className="flex items-center justify-between">
         <div>
           <span className="text-xs text-[var(--muted)] block">Onboarding protocol</span>
-          <h3 className={`font-semibold text-sm mt-0.5 ${mode === 'outie' ? 'text-[#5A7EE6] font-head' : 'text-[var(--text)]'}`}>
+          <h3 className={`font-semibold text-sm mt-0.5 ${mode === 'outie' ? 'text-[#2A835F] font-head' : 'text-[var(--text)]'}`}>
             Severance readiness checklist ({completedCount}/3 completed)
           </h3>
         </div>

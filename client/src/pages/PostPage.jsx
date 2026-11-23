@@ -193,7 +193,7 @@ export default function PostPage() {
                 {post.isInnie ? (post.innieHandle || 'Innie-0000') : (post.author?.name || (post.author?.username ? `@${post.author.username}` : 'Employee'))}
               </span>
               {post.floor && (
-                <Link to={`/floors/${post.floor.slug}`} className={`text-xs hover:underline ${isInnie ? 'text-[var(--accent)]' : 'text-[#7A8080]'}`}>
+                <Link to={`/floors/${post.floor.slug}`} className={`text-xs hover:underline ${isInnie ? 'text-[var(--accent)]' : 'text-[#5A7EE6] font-medium'}`}>
                   #{post.floor.name}
                 </Link>
               )}
@@ -204,7 +204,7 @@ export default function PostPage() {
           </div>
         </div>
 
-        <h1 className={`text-xl sm:text-2xl font-bold leading-tight font-head ${isInnie ? 'text-[var(--text)]' : 'text-[#5A7EE6]'}`}>
+        <h1 className={`text-xl sm:text-2xl font-bold leading-tight font-head ${isInnie ? 'text-[var(--text)]' : 'text-[#2A835F]'}`}>
           {post.title}
         </h1>
 

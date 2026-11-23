@@ -7,7 +7,7 @@
 - State: built, waiting for my test
 - Milestone: private beta after Step 21 (Phase 2 steps 14 to 16 come after the beta).
 - Last updated: 2026-11-24
-- Next action: Test static tabs bar on Home, universal borderless cards, 2000-char limit, and auto-expanding post composer
+- Next action: Test #2A835F headings, blue floor names, borderless search bars, and floor navigation without crash
 
 ## Steps
 | # | Step | State | Main files | Tested |

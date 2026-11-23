@@ -19,7 +19,7 @@ export default function LayoffRow({ layoff, onConfirm }) {
       <article className="py-5 px-1 border-b border-[#1E2D28] space-y-3 text-xs bg-transparent">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-[#5A7EE6] font-head">
+            <h2 className="text-base font-bold text-[#2A835F] font-head">
               <Link to={floorTarget} className="hover:underline transition-colors">
                 {layoff.company}
               </Link>
@@ -36,6 +36,8 @@ export default function LayoffRow({ layoff, onConfirm }) {
             </div>
           </div>
 
+          {/* Confirm report button commented out per design updates */}
+          {/*
           <div>
             {isConfirmed ? (
               <span className="inline-flex items-center gap-1.5 text-xs text-[#B0E4CC] font-medium px-2.5 py-1">
@@ -52,8 +54,11 @@ export default function LayoffRow({ layoff, onConfirm }) {
               </button>
             )}
           </div>
+          */}
         </div>
 
+        {/* Unspecified scale, confirmed by, and source link commented out per design updates */}
+        {/*
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs text-[#7A8080]">
           <div className="flex items-center gap-4">
             <span className="font-meta tabular-nums text-[#E5E5E5] font-medium flex items-center gap-1.5">
@@ -78,6 +83,7 @@ export default function LayoffRow({ layoff, onConfirm }) {
             </a>
           )}
         </div>
+        */}
       </article>
     );
   }
@@ -103,6 +109,8 @@ export default function LayoffRow({ layoff, onConfirm }) {
           </div>
         </div>
 
+        {/* Confirm report button commented out per design updates */}
+        {/*
         <div>
           {isConfirmed ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-[var(--muted)] px-2.5 py-1 bg-[var(--bg)] border border-[var(--border)] rounded-[var(--radius-sm)]">
@@ -120,8 +128,11 @@ export default function LayoffRow({ layoff, onConfirm }) {
             </Button>
           )}
         </div>
+        */}
       </div>
 
+      {/* Unspecified scale, confirmed by, and source link commented out per design updates */}
+      {/*
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border)] text-xs text-[var(--muted)]">
         <div className="flex items-center gap-4">
           <span className="font-meta tabular-nums text-[var(--text)] font-medium flex items-center gap-1.5">
@@ -146,6 +157,7 @@ export default function LayoffRow({ layoff, onConfirm }) {
           </a>
         )}
       </div>
+      */}
     </article>
   );
 }

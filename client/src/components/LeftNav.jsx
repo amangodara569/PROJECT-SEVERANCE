@@ -42,7 +42,7 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
   }, []);
 
   const primaryNav = [
-    { label: 'Home', path: '/', icon: Home },
+    { label: 'Home', path: '/', icon: Home, end: true },
     { label: 'Floors', path: '/floors', icon: Layers },
     { label: 'Severed Floor', path: '/severed-floor', icon: TrendingDown },
     { label: 'Comeback', path: '/comeback', icon: Briefcase },
@@ -66,6 +66,7 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
               <NavLink
                 key={item.label}
                 to={item.path}
+                end={Boolean(item.end)}
                 onClick={isMobile ? onCloseMobile : undefined}
                 className={({ isActive }) => {
                   if (mode === 'outie') {
@@ -84,8 +85,23 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={16} className={`shrink-0 ${mode === 'outie' && isActive ? 'text-[#E8DF6A]' : ''}`} />
-                    <span className="truncate">{item.label}</span>
+                    <Icon
+                      size={16}
+                      className={`shrink-0 transition-colors ${
+                        mode === 'outie'
+                          ? (isActive ? 'text-[#E8DF6A]' : 'text-[#E5E5E5]')
+                          : (isActive ? 'text-[var(--accent)]' : 'text-[var(--text)]')
+                      }`}
+                    />
+                    <span
+                      className={`truncate transition-colors ${
+                        mode === 'outie'
+                          ? (isActive ? 'text-[#E8DF6A] italic font-semibold' : 'text-[#E5E5E5]')
+                          : (isActive ? 'text-[var(--accent)] font-medium' : 'text-[var(--text)]')
+                      }`}
+                    >
+                      {item.label}
+                    </span>
                   </>
                 )}
               </NavLink>

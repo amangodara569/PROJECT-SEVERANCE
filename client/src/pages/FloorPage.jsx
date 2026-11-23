@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import api from '../api/api';
 import PostComposer from '../components/PostComposer';
 import PostCard from '../components/PostCard';
 import { Button } from '@/components/ui/button';
+import { useMode } from '../context/ModeContext';
 
 // Floor detail page with plain header section, composer, sort, and post rows
 export default function FloorPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { mode } = useMode();
   const [floor, setFloor] = useState(null);
   const [posts, setPosts] = useState([]);
   const [layoffs, setLayoffs] = useState([]);
@@ -22,21 +24,26 @@ export default function FloorPage() {
       try {
         const [fRes, lRes, jRes] = await Promise.all([
           api.get(`/floors/${slug}`),
-          api.get('/layoffs'),
-          api.get('/jobs')
+          api.get('/layoffs').catch(() => ({ data: { layoffs: [] } })),
+          api.get('/jobs').catch(() => ({ data: { jobs: [] } }))
         ]);
-        const f = fRes.data.floor;
+        const f = fRes.data?.floor;
+        if (!f) {
+          setFloor(null);
+          setLoading(false);
+          return;
+        }
         setFloor(f);
 
-        const pRes = await api.get(`/posts?floor=${f._id}&sort=${sort}`);
-        setPosts(pRes.data.posts || pRes.data.items || []);
+        const pRes = await api.get(`/posts?floor=${f._id}&sort=${sort}`).catch(() => ({ data: { posts: [] } }));
+        setPosts(pRes.data?.posts || pRes.data?.items || []);
 
-        const matchedLayoffs = (lRes.data.layoffs || []).filter(
+        const matchedLayoffs = (lRes.data?.layoffs || []).filter(
           (l) => l.company && l.company.toLowerCase() === f.name.toLowerCase()
         );
         setLayoffs(matchedLayoffs);
 
-        const matchedJobs = (jRes.data.jobs || []).filter(
+        const matchedJobs = (jRes.data?.jobs || []).filter(
           (j) => j.company && j.company.toLowerCase() === f.name.toLowerCase()
         );
         setHiring(matchedJobs);
@@ -97,20 +104,34 @@ export default function FloorPage() {
           <section className={`space-y-2 pb-4 ${mode === 'outie' ? 'border-b border-[#1E2D28]' : 'border-b border-[var(--border)]'}`}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h1 className={`text-xl font-bold font-head ${mode === 'outie' ? 'text-[#5A7EE6]' : 'text-[var(--text)]'}`}>
+                <h1 className={`text-xl sm:text-2xl font-bold font-head ${mode === 'outie' ? 'text-[#5A7EE6]' : 'text-[var(--text)]'}`}>
                   #{floor.name}
                 </h1>
                 <p className="text-xs text-[var(--muted)] mt-1">{floor.description || 'Corporate community exchange.'}</p>
                 <span className="text-xs text-[var(--muted)] tabular-nums mt-1 block">{floor.memberCount} members</span>
               </div>
-              <Button
-                variant={floor.isMember ? 'outline' : 'default'}
-                size="sm"
+              <button
+                type="button"
                 onClick={handleToggleJoin}
-                className={mode === 'outie' && !floor.isMember ? 'bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full' : ''}
+                className={
+                  mode === 'outie'
+                    ? (floor.isMember
+                        ? "border border-[#1E2D28] text-[#7A8080] hover:text-[#E5E5E5] rounded-full text-xs px-4 py-1.5 font-medium shrink-0 cursor-pointer transition-colors flex items-center gap-1"
+                        : "bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full text-xs px-4 py-1.5 shrink-0 cursor-pointer transition-opacity flex items-center gap-1")
+                    : (floor.isMember
+                        ? "border border-[var(--border)] text-[var(--muted)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium flex items-center gap-1"
+                        : "bg-[var(--accent)] text-[var(--accent-ink)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-bold flex items-center gap-1")
+                }
               >
-                {floor.isMember ? 'Joined' : 'Join'}
-              </Button>
+                {floor.isMember ? (
+                  <>
+                    <Check size={13} />
+                    <span>Joined</span>
+                  </>
+                ) : (
+                  '+ Join'
+                )}
+              </button>
             </div>
           </section>
 

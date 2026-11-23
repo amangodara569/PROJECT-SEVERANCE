@@ -12,7 +12,7 @@ export default function JobCard({ job }) {
         : 'border-[var(--border)] hover:bg-[var(--hover)] px-3 py-3'
     }`}>
       <div className="space-y-0.5">
-        <h3 className={`text-sm font-semibold font-head ${mode === 'outie' ? 'text-[#5A7EE6]' : 'text-[var(--text)]'}`}>
+        <h3 className={`text-sm font-semibold font-head ${mode === 'outie' ? 'text-[#2A835F]' : 'text-[var(--text)]'}`}>
           {job.title}
         </h3>
         <div className={`flex items-center gap-2 text-xs font-meta ${mode === 'outie' ? 'text-[#7A8080]' : 'text-[var(--muted)]'}`}>

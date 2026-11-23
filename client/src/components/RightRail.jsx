@@ -73,15 +73,28 @@ export default function RightRail({ floorContext = null, postContext = null }) {
           <div className="text-xs text-[var(--muted)]">
             {currentFloor.memberCount || 1} members
           </div>
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
             onClick={() => handleJoinFloor(currentFloor._id, currentFloor.slug)}
-            className="w-full"
+            className={`w-full justify-center ${
+              mode === 'outie'
+                ? (currentFloor.isMember
+                    ? "border border-[#1E2D28] text-[#7A8080] hover:text-[#E5E5E5] rounded-full text-xs px-3.5 py-1.5 font-medium shrink-0 cursor-pointer transition-colors flex items-center gap-1"
+                    : "bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full text-xs px-3.5 py-1.5 shrink-0 cursor-pointer transition-opacity flex items-center gap-1")
+                : (currentFloor.isMember
+                    ? "border border-[var(--border)] text-[var(--muted)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium flex items-center gap-1"
+                    : "bg-[var(--accent)] text-[var(--accent-ink)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-bold flex items-center gap-1")
+            }`}
           >
-            {currentFloor.isMember ? 'Joined' : 'Join floor'}
-          </Button>
+            {currentFloor.isMember ? (
+              <>
+                <Check size={12} />
+                <span>Joined</span>
+              </>
+            ) : (
+              '+ Join floor'
+            )}
+          </button>
 
           <div className="pt-3 space-y-2">
             <h3 className="text-xs font-semibold text-[var(--text)]">Floor rules</h3>
@@ -142,7 +155,7 @@ export default function RightRail({ floorContext = null, postContext = null }) {
                           {initials}
                         </div>
                         <div className="min-w-0 truncate">
-                          <div className="font-medium text-xs text-[#E5E5E5] group-hover:text-white truncate">
+                          <div className="font-bold text-xs text-[#5A7EE6] group-hover:underline truncate font-head">
                             #{floor.name}
                           </div>
                           <div className="text-[10px] text-[#7A8080] truncate">
@@ -151,19 +164,24 @@ export default function RightRail({ floorContext = null, postContext = null }) {
                         </div>
                       </Link>
 
-                      {floor.isMember ? (
-                        <span className="text-xs text-[#7A8080] font-medium shrink-0 flex items-center gap-1">
-                          <Check size={12} /> Joined
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleJoinFloor(floor._id, floor.slug)}
-                          className="text-xs text-[#B0E4CC] hover:underline font-medium shrink-0 cursor-pointer"
-                        >
-                          + Join
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleJoinFloor(floor._id, floor.slug)}
+                        className={
+                          floor.isMember
+                            ? "border border-[#1E2D28] text-[#7A8080] hover:text-[#E5E5E5] rounded-full text-xs px-3 py-1 font-medium shrink-0 cursor-pointer transition-colors flex items-center gap-1"
+                            : "bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full text-xs px-3 py-1 shrink-0 cursor-pointer transition-opacity"
+                        }
+                      >
+                        {floor.isMember ? (
+                          <>
+                            <Check size={12} />
+                            <span>Joined</span>
+                          </>
+                        ) : (
+                          '+ Join'
+                        )}
+                      </button>
                     </div>
                   );
                 })

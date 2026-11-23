@@ -125,7 +125,7 @@ export default function PostCard({ post, onVote, onDelete }) {
                 {post.floor && (
                   <Link
                     to={`/floors/${post.floor.slug}`}
-                    className="text-xs text-[#7A8080] hover:underline truncate"
+                    className="text-xs text-[#5A7EE6] hover:underline truncate font-medium"
                   >
                     #{post.floor.name}
                   </Link>
@@ -137,11 +137,11 @@ export default function PostCard({ post, onVote, onDelete }) {
             </div>
           </div>
 
-          {/* Post Title: PERIWINKLE BLUE #5A7EE6 */}
+          {/* Post Title: LUMON FOREST GREEN #2A835F */}
           <h2>
             <Link
               to={`/post/${post._id}`}
-              className="text-[16px] sm:text-[17px] leading-snug font-bold text-[#5A7EE6] hover:underline transition-colors font-head block"
+              className="text-[16px] sm:text-[17px] leading-snug font-bold text-[#2A835F] hover:underline transition-colors font-head block"
             >
               {title}
             </Link>
