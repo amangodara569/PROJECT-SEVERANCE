@@ -6,8 +6,8 @@
 - Current step: 12d — Theme v2
 - State: built, waiting for my test
 - Milestone: private beta after Step 21 (Phase 2 steps 14 to 16 come after the beta).
-- Last updated: 2026-11-21
-- Next action: Test Theme v2 across Outie and Innie modes at 1280px and 390px viewports
+- Last updated: 2026-11-24
+- Next action: Test #2A835F headings, blue floor names, borderless search bars, and floor navigation without crash
 
 ## Steps
 | # | Step | State | Main files | Tested |

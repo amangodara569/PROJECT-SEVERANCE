@@ -46,7 +46,7 @@ export default function Saved() {
         </button>
       </div>
 
-      <div className="pb-3 border-b border-[var(--border)]">
+      <div className={`pb-3 ${mode === 'outie' ? 'border-b border-[#1E2D28]' : 'border-b border-[var(--border)]'}`}>
         <h1 className="text-xl font-semibold text-[var(--text)] font-head">
           Saved
         </h1>
@@ -61,7 +61,7 @@ export default function Saved() {
           onAction={() => navigate('/')}
         />
       ) : (
-        <div className="space-y-4 p-3">
+        <div className={mode === 'outie' ? 'space-y-0' : 'space-y-4 p-3'}>
           {posts.map((post) => (
             <PostCard
               key={post._id}

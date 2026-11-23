@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
 import Avatar from './Avatar';
 import BreakRoom from './BreakRoom';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-// Expanding composer: compact row on focus transforms to full post editor, or direct full editor if initialOpen=true
+// Expanding composer: compact row transforms to full editor with auto-resizing (80px to 280px) and 2000-char limit
 export default function PostComposer({ defaultFloor = '', onPostCreated, initialOpen = false, onCancel }) {
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [title, setTitle] = useState('');
@@ -19,8 +18,19 @@ export default function PostComposer({ defaultFloor = '', onPostCreated, initial
   const [breakRoomMsg, setBreakRoomMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const textareaRef = useRef(null);
   const { user } = useAuth();
   const { isInnie } = useMode();
+
+  // Dynamic auto-expansion of post box up to 280px limit
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const maxHeight = 280;
+      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 80), maxHeight)}px`;
+    }
+  }, [body, isOpen]);
 
   useEffect(() => {
     if ((isOpen || initialOpen) && floors.length === 0) {
@@ -30,7 +40,7 @@ export default function PostComposer({ defaultFloor = '', onPostCreated, initial
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim()) return;
+    if (!title.trim() || !body.trim() || body.length > 2000) return;
     setBreakRoomMsg('');
     setIsSubmitting(true);
 
@@ -73,11 +83,11 @@ export default function PostComposer({ defaultFloor = '', onPostCreated, initial
     return (
       <div
         onClick={() => setIsOpen(true)}
-        className="py-3 px-3 border-b border-[var(--border)] cursor-pointer select-none space-y-2"
+        className="py-3 px-3 border-b border-[var(--border)] cursor-pointer select-none space-y-2 bg-[var(--surface-card)]"
       >
         <div className="flex items-center gap-3">
           <Avatar user={user} />
-          <div className="flex-1 bg-[var(--surface)] border border-[var(--border)] px-3 py-2 text-[var(--muted)] rounded-[var(--radius-sm)] text-xs">
+          <div className="flex-1 bg-[var(--hover)] border border-[var(--border)] px-3 py-2 text-[var(--muted)] rounded-[var(--radius-sm)] text-xs">
             What happened?
           </div>
         </div>
@@ -106,7 +116,7 @@ export default function PostComposer({ defaultFloor = '', onPostCreated, initial
               I got hired
             </button>
           </div>
-          <span>Posting as {authorName}</span>
+          <span className="font-meta">Posting as {authorName}</span>
         </div>
       </div>
     );
@@ -115,11 +125,11 @@ export default function PostComposer({ defaultFloor = '', onPostCreated, initial
   return (
     <>
       <BreakRoom message={breakRoomMsg} onClose={() => setBreakRoomMsg('')} />
-      <div className="py-4 px-3 border-b border-[var(--border)] space-y-3">
+      <div className="py-4 px-3 border-b border-[var(--border)] space-y-3 bg-[var(--surface-card)]">
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex items-center gap-2">
             <Avatar user={user} />
-            <span className="text-xs text-[var(--muted)]">Posting as {authorName}</span>
+            <span className="text-xs text-[var(--muted)] font-meta">Posting as {authorName}</span>
           </div>
 
           <Input
@@ -127,15 +137,27 @@ export default function PostComposer({ defaultFloor = '', onPostCreated, initial
             placeholder="Post title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            className="bg-[var(--surface)] border-[var(--border)] text-[var(--text)] text-xs h-9"
           />
 
-          <Textarea
-            required
-            rows={3}
-            placeholder="Say it plainly."
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-          />
+          <div className="space-y-1">
+            <textarea
+              ref={textareaRef}
+              required
+              rows={3}
+              maxLength={2000}
+              placeholder="Say it plainly. Max 2000 characters."
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              className="w-full p-3 text-xs bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)] resize-none overflow-y-auto font-mono transition-[height] duration-75"
+              style={{ minHeight: '80px', maxHeight: '280px' }}
+            />
+            <div className="flex justify-end">
+              <span className={`text-[11px] font-mono tabular-nums ${body.length > 1900 ? 'text-amber-400 font-semibold' : 'text-[var(--muted)]'}`}>
+                {body.length} / 2000
+              </span>
+            </div>
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <div className="flex items-center gap-2">
@@ -165,7 +187,13 @@ export default function PostComposer({ defaultFloor = '', onPostCreated, initial
               <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} variant="default" size="sm">
+              <Button
+                type="submit"
+                disabled={isSubmitting || body.length > 2000}
+                variant="default"
+                size="sm"
+                className="bg-[var(--accent)] text-[var(--accent-ink)] font-bold rounded-full px-4 hover:opacity-90 transition-opacity"
+              >
                 {isSubmitting ? 'Posting...' : 'Post'}
               </Button>
             </div>

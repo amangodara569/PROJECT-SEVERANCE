@@ -184,16 +184,16 @@ export default function PostPage() {
       </div>
 
       {/* Full post */}
-      <article className="pb-6 border-b border-[var(--border)] space-y-3">
+      <article className={`pb-6 space-y-3 ${isInnie ? 'border-b border-[var(--border)]' : 'border-b border-[#1E2D28]'}`}>
         <div className="flex items-center gap-3">
           <Avatar user={post.author} handle={post.innieHandle} className="w-10 h-10 text-xs shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-[var(--text)]">
+              <span className={`font-semibold text-sm ${isInnie ? 'text-[var(--text)]' : 'text-[#7A8080]'}`}>
                 {post.isInnie ? (post.innieHandle || 'Innie-0000') : (post.author?.name || (post.author?.username ? `@${post.author.username}` : 'Employee'))}
               </span>
               {post.floor && (
-                <Link to={`/floors/${post.floor.slug}`} className="text-xs text-[var(--accent)] hover:underline">
+                <Link to={`/floors/${post.floor.slug}`} className={`text-xs hover:underline ${isInnie ? 'text-[var(--accent)]' : 'text-[#5A7EE6] font-medium'}`}>
                   #{post.floor.name}
                 </Link>
               )}
@@ -204,11 +204,11 @@ export default function PostPage() {
           </div>
         </div>
 
-        <h1 className="text-xl sm:text-2xl font-semibold text-[var(--text)] leading-tight font-head">
+        <h1 className={`text-xl sm:text-2xl font-bold leading-tight font-head ${isInnie ? 'text-[var(--text)]' : 'text-[#2A835F]'}`}>
           {post.title}
         </h1>
 
-        <div className="text-[15px] leading-relaxed text-[var(--text)] whitespace-pre-wrap">
+        <div className={`text-[14px] leading-relaxed whitespace-pre-wrap ${isInnie ? 'text-[var(--text)]' : 'text-[#E5E5E5] font-mono'}`}>
           {post.body}
         </div>
 
@@ -320,15 +320,21 @@ export default function PostPage() {
                   className="w-full h-9 px-3 text-xs bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
                 />
               </div>
-              <div>
+              <div className="space-y-1">
                 <label className="block text-xs font-medium text-[var(--muted)] mb-1">Body</label>
                 <textarea
                   required
                   rows={5}
+                  maxLength={2000}
                   value={editPostBody}
                   onChange={(e) => setEditPostBody(e.target.value)}
-                  className="w-full p-3 text-xs bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+                  className="w-full p-3 text-xs bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)] font-mono resize-y"
                 />
+                <div className="flex justify-end">
+                  <span className={`text-[11px] font-mono tabular-nums ${editPostBody.length > 1900 ? 'text-amber-400 font-semibold' : 'text-[var(--muted)]'}`}>
+                    {editPostBody.length} / 2000
+                  </span>
+                </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button
@@ -344,7 +350,8 @@ export default function PostPage() {
                   type="submit"
                   variant="default"
                   size="sm"
-                  disabled={isSavingPostEdit}
+                  disabled={isSavingPostEdit || editPostBody.length > 2000}
+                  className="bg-[var(--accent)] text-[var(--accent-ink)] font-bold rounded-full px-4"
                 >
                   {isSavingPostEdit ? 'Saving...' : 'Save changes'}
                 </Button>
@@ -399,12 +406,28 @@ export default function PostPage() {
       )}
 
       {/* Comment composer */}
-      <form onSubmit={handleCreateComment} className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2">
+      <form onSubmit={handleCreateComment} className={
+        isInnie
+          ? "p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-2"
+          : "py-4 px-1 bg-transparent border-0 border-b border-[#1E2D28] space-y-2"
+      }>
         <span className="text-xs text-[var(--muted)] block">Commenting as {myHandle}</span>
-        <Textarea rows={3} placeholder="Say it plainly." value={commentText} onChange={(e) => setCommentText(e.target.value)} />
+        <Textarea
+          rows={3}
+          placeholder="Say it plainly."
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          className={!isInnie ? "bg-[#141414] border-[#1E2D28] text-[#E5E5E5] font-mono resize-y" : ""}
+        />
         <div className="flex items-center justify-between pt-1">
           <span className="text-[11px] text-[var(--muted)]">No phone numbers, emails or names of private people.</span>
-          <Button type="submit" disabled={submitting} variant="default" size="sm">
+          <Button
+            type="submit"
+            disabled={submitting}
+            variant="default"
+            size="sm"
+            className={!isInnie ? "bg-[#B0E4CC] text-[#091413] font-bold rounded-full px-4 hover:opacity-90" : ""}
+          >
             {submitting ? 'Commenting...' : 'Comment'}
           </Button>
         </div>

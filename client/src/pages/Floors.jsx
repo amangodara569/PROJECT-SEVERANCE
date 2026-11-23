@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Plus, X, Users, ArrowLeft, Radio } from 'lucide-react';
+import { Search, Plus, X, Users, ArrowLeft, Radio, Check } from 'lucide-react';
 import api from '../api/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -107,17 +107,23 @@ export default function Floors() {
       </div>
 
       {/* Search input plus Create floor accent button */}
-      <div className="flex items-center justify-between gap-3 pb-2 border-b border-[var(--border)]">
+      <div className={`flex items-center justify-between gap-3 pb-3 ${mode === 'outie' ? 'border-b border-[#1E2D28]' : 'border-b border-[var(--border)]'}`}>
         <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-2.5 text-[var(--muted)]" />
-          <Input
+          <Search size={14} className="absolute left-2.5 top-2 text-[var(--muted)] pointer-events-none" />
+          <input
+            type="text"
             placeholder="Search company floors..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9"
+            className="w-full h-8 pl-8 pr-3 text-xs bg-transparent border-none text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none"
           />
         </div>
-        <Button variant="default" size="sm" onClick={() => setShowCreate(true)}>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setShowCreate(true)}
+          className={mode === 'outie' ? 'bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full' : ''}
+        >
           <Plus size={14} /> Create floor
         </Button>
       </div>
@@ -161,7 +167,12 @@ export default function Floors() {
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowCreate(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="default" size="sm">
+                <Button
+                  type="submit"
+                  variant="default"
+                  size="sm"
+                  className={mode === 'outie' ? 'bg-[#B0E4CC] text-[#091413] font-bold rounded-full' : ''}
+                >
                   Create floor
                 </Button>
               </div>
@@ -170,8 +181,8 @@ export default function Floors() {
         </div>
       )}
 
-      {/* Directory of Floors presented in rich card format with universal spacing */}
-      <div className="space-y-4">
+      {/* Directory of Floors: Borderless with single horizontal divider line in Outie mode */}
+      <div className={mode === 'outie' ? 'space-y-0' : 'space-y-4'}>
         {loading ? (
           <div className="py-12 text-center text-[var(--muted)]">Loading company floors...</div>
         ) : floors.length === 0 ? (
@@ -183,22 +194,34 @@ export default function Floors() {
             return (
               <div
                 key={f._id}
-                className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-3 shadow-sm hover:border-[var(--border-strong,var(--accent))] transition-all"
+                className={
+                  mode === 'outie'
+                    ? "py-5 px-1 border-b border-[#1E2D28] space-y-3 bg-transparent transition-colors"
+                    : "p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-3 shadow-sm hover:border-[var(--border-strong,var(--accent))] transition-all"
+                }
               >
                 {/* Floor Header Bar */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-10 h-10 border border-[var(--border)] flex items-center justify-center font-bold text-xs bg-[var(--accent-soft)] text-[var(--accent)] rounded-[var(--radius-sm)] shrink-0">
+                    <div className={`w-9 h-9 flex items-center justify-center font-bold text-xs shrink-0 rounded-[6px] ${
+                      mode === 'outie'
+                        ? 'bg-[#262A2A] text-[#E5E5E5]'
+                        : 'border border-[var(--border)] bg-[var(--accent-soft)] text-[var(--accent)] rounded-[var(--radius-sm)]'
+                    }`}>
                       {initials}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link
-                          to={`/floors/${f.slug}`}
-                          className="font-semibold text-sm text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate"
-                        >
-                          #{f.name}
-                        </Link>
+                        <h2 className="text-base sm:text-[17px] font-bold font-head leading-snug">
+                          <Link
+                            to={`/floors/${f.slug}`}
+                            className={`transition-colors truncate ${
+                              mode === 'outie' ? 'text-[#5A7EE6] hover:underline' : 'text-[var(--text)] hover:text-[var(--accent)]'
+                            }`}
+                          >
+                            #{f.name}
+                          </Link>
+                        </h2>
                         {f.category && (
                           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg)] border border-[var(--border)] text-[var(--muted)]">
                             {f.category}
@@ -219,24 +242,37 @@ export default function Floors() {
                     </div>
                   </div>
 
-                  <Button
+                  <button
                     type="button"
-                    variant={f.isMember ? 'outline' : 'default'}
-                    size="sm"
                     onClick={() => handleToggleJoin(f._id, f.slug)}
-                    className="shrink-0"
+                    className={
+                      mode === 'outie'
+                        ? (f.isMember
+                            ? "border border-[#1E2D28] text-[#7A8080] hover:text-[#E5E5E5] rounded-full text-xs px-3.5 py-1.5 font-medium shrink-0 cursor-pointer transition-colors flex items-center gap-1"
+                            : "bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full text-xs px-3.5 py-1.5 shrink-0 cursor-pointer transition-opacity flex items-center gap-1")
+                        : (f.isMember
+                            ? "border border-[var(--border)] text-[var(--muted)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium flex items-center gap-1"
+                            : "bg-[var(--accent)] text-[var(--accent-ink)] px-3 py-1 rounded-[var(--radius-sm)] text-xs font-bold flex items-center gap-1")
+                    }
                   >
-                    {f.isMember ? 'Joined' : '+ Join'}
-                  </Button>
+                    {f.isMember ? (
+                      <>
+                        <Check size={12} />
+                        <span>Joined</span>
+                      </>
+                    ) : (
+                      '+ Join'
+                    )}
+                  </button>
                 </div>
 
                 {/* Floor Description */}
-                <p className="text-xs text-[var(--muted)] leading-relaxed">
+                <p className={`text-xs leading-relaxed ${mode === 'outie' ? 'text-[#E5E5E5]/90 font-mono' : 'text-[var(--muted)]'}`}>
                   {f.description || 'Corporate department and community exchange floor for verified personnel.'}
                 </p>
 
                 {/* Floor Stats Footer */}
-                <div className="pt-2 border-t border-[var(--border)] flex items-center gap-4 text-[11px] text-[var(--muted)]">
+                <div className={`flex items-center gap-4 text-[11px] text-[var(--muted)] ${mode === 'outie' ? 'pt-1' : 'pt-2 border-t border-[var(--border)]'}`}>
                   <div className="flex items-center gap-1.5">
                     <Users size={13} className="text-[var(--muted)]" />
                     <span className="tabular-nums font-medium text-[var(--text)]">{f.memberCount || 0}</span>
