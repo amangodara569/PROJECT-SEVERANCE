@@ -59,7 +59,7 @@ export default function Avatar({ user, name, username, handle, className = '' })
           className="avatar-photo w-full h-full object-cover rounded-full"
         />
       ) : (
-        <span className="avatar-initials text-xs font-medium text-[var(--accent)] font-sans">
+        <span className="avatar-initials text-xs font-semibold text-[var(--text)] font-mono">
           {initials}
         </span>
       )}

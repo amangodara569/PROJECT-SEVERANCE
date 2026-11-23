@@ -124,8 +124,12 @@ export default function Profile() {
         </button>
       </div>
 
-      {/* Profile Header presented in authentic corporate card format */}
-      <section className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-4 shadow-sm">
+      {/* Profile Header presented in authentic corporate card format (Innie) or borderless with horizontal divider (Outie) */}
+      <section className={
+        !isInnie
+          ? "py-5 px-1 bg-transparent border-0 border-b border-[#1E2D28] space-y-4"
+          : "p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-4 shadow-sm"
+      }>
         {/* Classification and Employment Status Bar */}
         <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
@@ -333,7 +337,7 @@ export default function Profile() {
         {posts.length === 0 ? (
           <div className="py-8 text-center text-[var(--muted)]">No transmissions shared yet.</div>
         ) : (
-          <div className="space-y-4">
+          <div className={!isInnie ? 'space-y-0' : 'space-y-4'}>
             {posts.map((post) => (
               <PostCard
                 key={post._id}

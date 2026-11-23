@@ -4,6 +4,7 @@ import { MessageSquare, Share2, Bookmark, ArrowBigUp, ArrowBigDown, Trash2, Penc
 import Avatar from './Avatar';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import { useMode } from '../context/ModeContext';
 import { Button } from '@/components/ui/button';
 
 const timeAgo = (dateStr) => {
@@ -22,9 +23,10 @@ const timeAgo = (dateStr) => {
   return `${years}y ago`;
 };
 
-// PostCard: Standalone card flow with header, headline, body, media slot, and engagement bar
+// PostCard: Decoupled architecture supporting Outie (OLED borderless) and Innie (Lumon framed)
 export default function PostCard({ post, onVote, onDelete }) {
   const { user } = useAuth();
+  const { mode } = useMode();
   const [title, setTitle] = useState(post.title);
   const [body, setBody] = useState(post.body);
   const [isSaved, setIsSaved] = useState(Boolean(post.isSaved));
@@ -37,8 +39,9 @@ export default function PostCard({ post, onVote, onDelete }) {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const currentVote = post.userVote ?? post.myVote ?? 0;
+  const isOutieMode = mode === 'outie';
 
-  // Strict role-based ownership: only the true author of this post can edit or delete
+  // Role-based ownership check
   const currentUserId = user?._id || user?.id;
   const authorId = post.author?._id || post.author;
   const isOwner = Boolean(
@@ -51,7 +54,7 @@ export default function PostCard({ post, onVote, onDelete }) {
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-    if (!editTitle.trim() || !editBody.trim()) return;
+    if (!editTitle.trim() || !editBody.trim() || editBody.length > 2000) return;
     setIsSavingEdit(true);
     try {
       const res = await api.put(`/posts/${post._id}`, {
@@ -81,7 +84,6 @@ export default function PostCard({ post, onVote, onDelete }) {
     }
   };
 
-  // Single clean display name to prevent duplicate handles
   const authorDisplayName = post.isInnie
     ? (post.innieHandle || 'Innie-0000')
     : (post.author?.name || (post.author?.username ? `@${post.author.username}` : 'Employee'));
@@ -108,153 +110,255 @@ export default function PostCard({ post, onVote, onDelete }) {
   };
 
   return (
-    <article className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] hover:border-[var(--muted)] transition-all space-y-3 text-xs">
-      {/* 1. Header Row: Avatar, Username, Time below username */}
-      <div className="flex items-center gap-3">
-        <Avatar user={post.author} handle={post.innieHandle} className="w-10 h-10 text-xs shrink-0" />
+    <>
+      {isOutieMode ? (
+        /* ================= OUTIE ARCHITECTURE (OLED Black, Borderless, Periwinkle Titles) ================= */
+        <article className="py-5 px-1 border-b border-[#1E2D28] space-y-3 text-xs bg-transparent">
+          {/* Header Row */}
+          <div className="flex items-center gap-3">
+            <Avatar user={post.author} handle={post.innieHandle} className="w-8 h-8 text-xs shrink-0 bg-[#262A2A] text-[#E5E5E5]" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#7A8080] font-medium truncate">
+                  {authorDisplayName}
+                </span>
+                {post.floor && (
+                  <Link
+                    to={`/floors/${post.floor.slug}`}
+                    className="text-xs text-[#7A8080] hover:underline truncate"
+                  >
+                    #{post.floor.name}
+                  </Link>
+                )}
+              </div>
+              <div className="text-[11px] text-[#7A8080] font-meta mt-0.5">
+                {timeAgo(post.createdAt)}
+              </div>
+            </div>
+          </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm text-[var(--text)] truncate">
-              {authorDisplayName}
-            </span>
-            {post.floor && (
+          {/* Post Title: PERIWINKLE BLUE #5A7EE6 */}
+          <h2>
+            <Link
+              to={`/post/${post._id}`}
+              className="text-[16px] sm:text-[17px] leading-snug font-bold text-[#5A7EE6] hover:underline transition-colors font-head block"
+            >
+              {title}
+            </Link>
+          </h2>
+
+          {/* Post Content Body: Monospace in #E5E5E5 */}
+          <p className="text-[13.5px] leading-relaxed text-[#E5E5E5] font-mono whitespace-pre-wrap">
+            {body}
+          </p>
+
+          {/* Media slot */}
+          {post.mediaUrl && (
+            <div className="rounded-[var(--radius-sm)] overflow-hidden border border-[#1E2D28] max-h-96 bg-[#0a0a0a]">
+              <img src={post.mediaUrl} alt="" className="w-full object-cover" />
+            </div>
+          )}
+
+          {/* Engagement Section: Borderless inline items */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-[#7A8080]">
+            <div className="flex items-center gap-5">
+              {/* Upvote / Downvote */}
+              <div className="flex items-center gap-1.5 text-xs text-[#E5E5E5]">
+                <button
+                  type="button"
+                  onClick={() => onVote && onVote(post._id, currentVote === 1 ? 0 : 1)}
+                  className={`cursor-pointer transition-colors ${currentVote === 1 ? 'text-[#B0E4CC]' : 'hover:text-white'}`}
+                  title="Upvote"
+                  aria-label="Upvote"
+                >
+                  <ArrowBigUp size={16} fill={currentVote === 1 ? 'currentColor' : 'none'} />
+                </button>
+                <span className={currentVote !== 0 ? 'text-[#B0E4CC] font-semibold' : 'text-[#E5E5E5]'}>
+                  {post.score || 0}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onVote && onVote(post._id, currentVote === -1 ? 0 : -1)}
+                  className={`cursor-pointer transition-colors ${currentVote === -1 ? 'text-[#B0E4CC]' : 'hover:text-white'}`}
+                  title="Downvote"
+                  aria-label="Downvote"
+                >
+                  <ArrowBigDown size={16} fill={currentVote === -1 ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+
+              {/* Comments Link */}
               <Link
-                to={`/floors/${post.floor.slug}`}
-                className="text-xs text-[var(--accent)] hover:underline truncate"
+                to={`/post/${post._id}`}
+                className="flex items-center gap-1.5 hover:text-[#E5E5E5] transition-colors"
               >
-                #{post.floor.name}
+                <MessageSquare size={14} />
+                <span>{post.commentCount || 0} comments</span>
               </Link>
+
+              {/* Share Button */}
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex items-center gap-1.5 hover:text-[#E5E5E5] cursor-pointer transition-colors"
+              >
+                <Share2 size={14} />
+                <span>{copied ? 'Copied' : 'Share'}</span>
+              </button>
+
+              {/* Save / Bookmark Button */}
+              <button
+                type="button"
+                onClick={handleToggleSave}
+                className={`flex items-center gap-1.5 hover:text-[#E5E5E5] cursor-pointer transition-colors ${isSaved ? 'text-[#B0E4CC] font-medium' : ''}`}
+              >
+                <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
+                <span>{isSaved ? 'Saved' : 'Save'}</span>
+              </button>
+            </div>
+
+            {/* Author Edit / Delete */}
+            {isOwner && (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditTitle(title);
+                    setEditBody(body);
+                    setShowEditModal(true);
+                  }}
+                  className="hover:text-[#E5E5E5] cursor-pointer transition-colors flex items-center gap-1 font-medium"
+                  title="Edit post"
+                >
+                  <Pencil size={13} />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-red-400 hover:text-red-300 cursor-pointer transition-colors flex items-center gap-1 font-medium"
+                  title="Delete post"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete</span>
+                </button>
+              </div>
             )}
           </div>
-          {/* Relative time positioned directly below username */}
-          <div className="text-[11px] text-[var(--muted)] font-meta mt-0.5">
-            {timeAgo(post.createdAt)}
+        </article>
+      ) : (
+        /* ================= INNIE ARCHITECTURE (Lumon Light Mode, Framed Cards) ================= */
+        <article className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] hover:border-[var(--muted)] transition-all space-y-3 text-xs">
+          <div className="flex items-center gap-3">
+            <Avatar user={post.author} handle={post.innieHandle} className="w-9 h-9 text-xs shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm text-[var(--text)] truncate">
+                  {authorDisplayName}
+                </span>
+                {post.floor && (
+                  <Link
+                    to={`/floors/${post.floor.slug}`}
+                    className="text-xs text-[var(--accent)] hover:underline truncate"
+                  >
+                    #{post.floor.name}
+                  </Link>
+                )}
+              </div>
+              <div className="text-[11px] text-[var(--muted)] font-meta mt-0.5">
+                {timeAgo(post.createdAt)}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* 2. Post Title / Heading */}
-      <h2>
-        <Link
-          to={`/post/${post._id}`}
-          className="text-[16px] sm:text-[17px] leading-snug font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors font-head block"
-        >
-          {title}
-        </Link>
-      </h2>
+          <h2>
+            <Link
+              to={`/post/${post._id}`}
+              className="text-[16px] sm:text-[17px] leading-snug font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors font-head block"
+            >
+              {title}
+            </Link>
+          </h2>
 
-      {/* 3. Post Content / Body */}
-      <p className="text-[14px] leading-relaxed text-[var(--text)] line-clamp-3 whitespace-pre-wrap">
-        {body}
-      </p>
+          <p className="text-[14px] leading-relaxed text-[var(--text)] line-clamp-3 whitespace-pre-wrap">
+            {body}
+          </p>
 
-      {/* 4. Media Placeholder Slot (ready for future images or attachments) */}
-      {post.mediaUrl && (
-        <div className="rounded-[var(--radius-sm)] overflow-hidden border border-[var(--border)] max-h-96 bg-[var(--bg)]">
-          <img src={post.mediaUrl} alt="" className="w-full object-cover" />
-        </div>
+          {post.mediaUrl && (
+            <div className="rounded-[var(--radius-sm)] overflow-hidden border border-[var(--border)] max-h-96 bg-[var(--bg)]">
+              <img src={post.mediaUrl} alt="" className="w-full object-cover" />
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border)] text-xs text-[var(--muted)]">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-0.5 bg-[var(--bg)] border border-[var(--border)] rounded-[var(--radius-sm)] px-1 py-0.5 tabular-nums font-medium">
+                <button
+                  type="button"
+                  onClick={() => onVote && onVote(post._id, currentVote === 1 ? 0 : 1)}
+                  className={`p-1 rounded cursor-pointer transition-colors ${currentVote === 1 ? 'text-[var(--accent)] font-semibold' : 'hover:text-[var(--text)]'}`}
+                  title="Upvote"
+                >
+                  <ArrowBigUp size={16} fill={currentVote === 1 ? 'currentColor' : 'none'} />
+                </button>
+                <span className={`px-1 text-xs font-semibold ${currentVote !== 0 ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
+                  {post.score || 0}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onVote && onVote(post._id, currentVote === -1 ? 0 : -1)}
+                  className={`p-1 rounded cursor-pointer transition-colors ${currentVote === -1 ? 'text-[var(--accent)] font-semibold' : 'hover:text-[var(--text)]'}`}
+                  title="Downvote"
+                >
+                  <ArrowBigDown size={16} fill={currentVote === -1 ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+
+              <Link to={`/post/${post._id}`} className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--hover)] hover:text-[var(--text)] transition-colors">
+                <MessageSquare size={14} />
+                <span>{post.commentCount || 0} comments</span>
+              </Link>
+
+              <button type="button" onClick={handleShare} className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--hover)] hover:text-[var(--text)] cursor-pointer transition-colors">
+                <Share2 size={14} />
+                <span>{copied ? 'Copied' : 'Share'}</span>
+              </button>
+
+              <button type="button" onClick={handleToggleSave} className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--hover)] cursor-pointer transition-colors ${isSaved ? 'text-[var(--accent)] font-medium' : 'hover:text-[var(--text)]'}`}>
+                <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
+                <span>{isSaved ? 'Saved' : 'Save'}</span>
+              </button>
+            </div>
+
+            {isOwner && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditTitle(title);
+                    setEditBody(body);
+                    setShowEditModal(true);
+                  }}
+                  className="px-2 py-1 text-[var(--muted)] hover:text-[var(--text)] rounded hover:bg-[var(--hover)] cursor-pointer transition-colors flex items-center gap-1 font-medium"
+                >
+                  <Pencil size={13} />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-2 py-1 text-red-400 hover:text-red-300 rounded hover:bg-[var(--hover)] cursor-pointer transition-colors flex items-center gap-1 font-medium"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </article>
       )}
 
-      {/* 5. Engagement Section: Upvote, Comment, Share, Save, Owner Edit/Delete */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border)] text-xs text-[var(--muted)]">
-        <div className="flex items-center gap-3">
-          {/* Arrow Upvote / Downvote with Score */}
-          <div className="flex items-center gap-0.5 bg-[var(--bg)] border border-[var(--border)] rounded-[var(--radius-sm)] px-1 py-0.5 tabular-nums font-medium">
-            <button
-              type="button"
-              onClick={() => onVote && onVote(post._id, currentVote === 1 ? 0 : 1)}
-              className={`p-1 rounded cursor-pointer transition-colors ${
-                currentVote === 1
-                  ? 'text-[var(--accent)] font-semibold'
-                  : 'hover:text-[var(--text)]'
-              }`}
-              title="Upvote"
-              aria-label="Upvote"
-            >
-              <ArrowBigUp size={16} fill={currentVote === 1 ? 'currentColor' : 'none'} />
-            </button>
-            <span className={`px-1 text-xs font-semibold ${currentVote !== 0 ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
-              {post.score || 0}
-            </span>
-            <button
-              type="button"
-              onClick={() => onVote && onVote(post._id, currentVote === -1 ? 0 : -1)}
-              className={`p-1 rounded cursor-pointer transition-colors ${
-                currentVote === -1
-                  ? 'text-[var(--accent)] font-semibold'
-                  : 'hover:text-[var(--text)]'
-              }`}
-              title="Downvote"
-              aria-label="Downvote"
-            >
-              <ArrowBigDown size={16} fill={currentVote === -1 ? 'currentColor' : 'none'} />
-            </button>
-          </div>
-
-          {/* Comments Link */}
-          <Link
-            to={`/post/${post._id}`}
-            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--hover)] hover:text-[var(--text)] transition-colors"
-          >
-            <MessageSquare size={14} />
-            <span>{post.commentCount || 0} comments</span>
-          </Link>
-
-          {/* Share Button */}
-          <button
-            type="button"
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--hover)] hover:text-[var(--text)] cursor-pointer transition-colors"
-          >
-            <Share2 size={14} />
-            <span>{copied ? 'Copied' : 'Share'}</span>
-          </button>
-
-          {/* Save / Bookmark Button */}
-          <button
-            type="button"
-            onClick={handleToggleSave}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--hover)] cursor-pointer transition-colors ${
-              isSaved ? 'text-[var(--accent)] font-medium' : 'hover:text-[var(--text)]'
-            }`}
-          >
-            <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
-            <span>{isSaved ? 'Saved' : 'Save'}</span>
-          </button>
-        </div>
-
-        {/* Strict Role-Based Owner Options: Edit & Delete buttons appear ONLY for post author */}
-        {isOwner && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEditTitle(title);
-                setEditBody(body);
-                setShowEditModal(true);
-              }}
-              className="px-2 py-1 text-[var(--muted)] hover:text-[var(--text)] rounded hover:bg-[var(--hover)] cursor-pointer transition-colors flex items-center gap-1 font-medium"
-              title="Edit post"
-            >
-              <Pencil size={13} />
-              <span>Edit</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-2 py-1 text-red-400 hover:text-red-300 rounded hover:bg-[var(--hover)] cursor-pointer transition-colors flex items-center gap-1 font-medium"
-              title="Delete post"
-            >
-              <Trash2 size={13} />
-              <span>Delete</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Edit Post Modal */}
+      {/* Edit Post Modal with 2000-char limit */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
           <div className="w-full max-w-lg p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] space-y-4 shadow-xl">
@@ -281,15 +385,21 @@ export default function PostCard({ post, onVote, onDelete }) {
                   className="w-full h-9 px-3 text-xs bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
                 />
               </div>
-              <div>
+              <div className="space-y-1">
                 <label className="block text-xs font-medium text-[var(--muted)] mb-1">Body</label>
                 <textarea
                   required
-                  rows={4}
+                  rows={5}
+                  maxLength={2000}
                   value={editBody}
                   onChange={(e) => setEditBody(e.target.value)}
-                  className="w-full p-3 text-xs bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+                  className="w-full p-3 text-xs bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-[var(--accent)] font-mono resize-y"
                 />
+                <div className="flex justify-end">
+                  <span className={`text-[11px] font-mono tabular-nums ${editBody.length > 1900 ? 'text-amber-400 font-semibold' : 'text-[var(--muted)]'}`}>
+                    {editBody.length} / 2000
+                  </span>
+                </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button
@@ -305,7 +415,8 @@ export default function PostCard({ post, onVote, onDelete }) {
                   type="submit"
                   variant="default"
                   size="sm"
-                  disabled={isSavingEdit}
+                  disabled={isSavingEdit || editBody.length > 2000}
+                  className="bg-[var(--accent)] text-[var(--accent-ink)] font-bold rounded-full px-4"
                 >
                   {isSavingEdit ? 'Saving...' : 'Save changes'}
                 </Button>
@@ -358,6 +469,6 @@ export default function PostCard({ post, onVote, onDelete }) {
           </div>
         </div>
       )}
-    </article>
+    </>
   );
 }

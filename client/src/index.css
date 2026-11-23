@@ -1,57 +1,70 @@
 @import "tailwindcss";
 
 /*
-  Linked Out Theme v2
-  See docs/DESIGN.md
+  Linked Out Theme Architecture
+  Decoupled: Outie (OLED Black, Borderless) vs Innie (Lumon Corporate Light)
 */
 
 :root {
-  --bg: #181E27;
-  --surface: #1F2630;
-  --hover: #262E3A;
-  --border: #313B49;
-  --text: #DCE2EA;
-  --muted: #929EAD;
-  --accent: #D6B27A;
-  --accent-ink: #1C1A14;
-  --accent-soft: #2A2F36;
-  --radius: 10px;
-  --radius-sm: 8px;
+  --bg: #000000;
+  --surface: #000000;
+  --surface-card: transparent;
+  --hover: #121414;
+  --border: #1E2D28;
+  --divider: #1E2D28;
+  --text: #E5E5E5;
+  --heading: #5A7EE6;
+  --muted: #7A8080;
+  --accent: #B0E4CC;
+  --accent-ink: #091413;
+  --accent-soft: rgba(176, 228, 204, 0.15);
+  --active-nav: #E8DF6A;
+  --sort-active: #1E2D28;
+  --avatar-bg: #262A2A;
+  --radius: 8px;
+  --radius-sm: 6px;
   --row-pad: 20px;
-  --font-body: "IBM Plex Sans", system-ui, sans-serif;
-  --font-head: "IBM Plex Sans", system-ui, sans-serif;
-  --font-meta: "IBM Plex Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-body: "JetBrains Mono", ui-monospace, monospace;
+  --font-head: "JetBrains Mono", ui-monospace, monospace;
+  --font-meta: "JetBrains Mono", ui-monospace, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 :root.innie,
 .innie {
   --bg: #E6EEEA;
   --surface: #F1F6F3;
+  --surface-card: #F1F6F3;
   --hover: #DCE6E1;
   --border: #CBD8D2;
+  --divider: #CBD8D2;
   --text: #1B2A26;
+  --heading: #1B2A26;
   --muted: #566761;
   --accent: #2D6F63;
   --accent-ink: #F1F6F3;
   --accent-soft: #D3E3DC;
+  --active-nav: #2D6F63;
+  --sort-active: #CBD8D2;
+  --avatar-bg: #D3E3DC;
   --radius: 2px;
   --radius-sm: 2px;
   --row-pad: 14px;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
   --font-head: "IBM Plex Mono", ui-monospace, monospace;
   --font-meta: "IBM Plex Mono", ui-monospace, monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 html {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 *, *::before, *::after {
   box-sizing: border-box;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -76,14 +89,31 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-head);
+  color: var(--heading);
 }
 
-/* Avatar: Outie circle 36px, Innie square 32px */
+:root.innie h1,
+:root.innie h2,
+:root.innie h3,
+:root.innie h4,
+:root.innie h5,
+:root.innie h6,
+.innie h1,
+.innie h2,
+.innie h3,
+.innie h4,
+.innie h5,
+.innie h6 {
+  color: var(--text);
+}
+
+/* Avatar: Outie circular with charcoal background, Innie square with accent-soft */
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 9999px;
-  background-color: var(--accent-soft);
+  background-color: var(--avatar-bg);
+  color: var(--text);
 }
 
 :root.innie .avatar,
@@ -91,6 +121,8 @@ h1, h2, h3, h4, h5, h6 {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-sm);
+  background-color: var(--accent-soft);
+  color: var(--text);
 }
 
 .avatar-initials {
@@ -117,18 +149,20 @@ h1, h2, h3, h4, h5, h6 {
   display: block;
 }
 
-/* Sever Toggle */
+/* Sever Toggle Pills */
 .sever-segment {
   padding: 4px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 9999px;
   transition: background-color 0.15s, color 0.15s;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.03em;
 }
 
 :root .sever-outie {
-  background-color: var(--accent-soft);
-  color: var(--text);
+  background-color: var(--accent);
+  color: var(--accent-ink);
 }
 :root .sever-innie {
   background-color: transparent;
@@ -149,8 +183,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 :root.innie .sever-innie,
 .innie .sever-innie {
-  background-color: var(--accent-soft);
-  color: var(--text);
+  background-color: var(--accent);
+  color: var(--accent-ink);
 }
 
 button:disabled {

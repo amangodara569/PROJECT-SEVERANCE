@@ -30,8 +30,8 @@ const validatePost = (title, body) => {
   }
   if (typeof body !== 'string' || !body.trim()) return 'Body is required';
   const trimmedBody = body.trim();
-  if (trimmedBody.length < 10 || trimmedBody.length > 10000) {
-    return 'Post body must be between 10 and 10000 characters';
+  if (trimmedBody.length < 10 || trimmedBody.length > 2000) {
+    return 'Post body must be between 10 and 2000 characters';
   }
   return null;
 };

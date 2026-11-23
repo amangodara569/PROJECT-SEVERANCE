@@ -4,6 +4,7 @@ import api from '../api/api';
 import LayoffRow from '../components/LayoffRow';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useMode } from '../context/ModeContext';
 
 // Renders 30-day sparkline only if daily data points are returned by API
 const renderSparkline = (numbers = []) => {
@@ -15,6 +16,7 @@ const renderSparkline = (numbers = []) => {
 
 // Severed floor workforce reduction ledger with cards, modal submission, and no wellness clutter
 export default function SeveredFloor() {
+  const { mode } = useMode();
   const [layoffs, setLayoffs] = useState([]);
   const [overview, setOverview] = useState({ severedThisMonth: 0, severedByDay: [] });
   const [search, setSearch] = useState('');
@@ -87,7 +89,7 @@ export default function SeveredFloor() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto p-4 text-xs">
       {/* Header: count as 42px tabular number with sparkline */}
-      <section className="space-y-1 pb-4 border-b border-[var(--border)]">
+      <section className={`space-y-1 pb-4 ${mode === 'outie' ? 'border-b border-[#1E2D28]' : 'border-b border-[var(--border)]'}`}>
         <div className="text-[42px] leading-tight font-semibold tabular-nums text-[var(--text)] font-head">
           {overview.severedThisMonth.toLocaleString()}
         </div>
@@ -107,10 +109,15 @@ export default function SeveredFloor() {
             placeholder="Search company records"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9"
+            className={`pl-9 h-9 ${mode === 'outie' ? 'bg-[#141414] border-[#1E2D28] text-[#E5E5E5]' : ''}`}
           />
         </div>
-        <Button variant="default" size="sm" onClick={() => setShowAddModal(true)}>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setShowAddModal(true)}
+          className={mode === 'outie' ? 'bg-[#B0E4CC] text-[#091413] hover:opacity-90 font-bold rounded-full' : ''}
+        >
           <Plus size={14} /> Add report
         </Button>
       </div>
@@ -204,8 +211,8 @@ export default function SeveredFloor() {
         </div>
       )}
 
-      {/* Reports List formatted as spaced cards */}
-      <div className="space-y-4">
+      {/* Reports List formatted as spaced cards (Innie) or borderless rows with single horizontal divider (Outie) */}
+      <div className={mode === 'outie' ? 'space-y-0' : 'space-y-4'}>
         {loading ? (
           <div className="py-12 text-center text-[var(--muted)]">Loading reduction ledger...</div>
         ) : filtered.length === 0 ? (

@@ -34,21 +34,21 @@ export default function AppShell() {
         </div>
       )}
 
-      {/* Multi-Column Layout: balanced column proportions, hairline dividers */}
+      {/* Multi-Column Layout: balanced column proportions, borderless layout */}
       <div className="pt-14 w-full flex justify-center pb-16 md:pb-0">
-        <div className="w-full max-w-[1400px] px-4 grid grid-cols-1 md:grid-cols-[240px_1fr] lg:grid-cols-[260px_minmax(0,1fr)_260px] justify-center">
-          {/* Left Column (260px) */}
-          <div className="hidden md:block border-r border-[var(--border)]">
+        <div className="w-full max-w-[1440px] px-6 grid grid-cols-1 md:grid-cols-[220px_1fr] lg:grid-cols-[240px_minmax(0,1fr)_280px] gap-8 justify-center">
+          {/* Left Column (No border divider) */}
+          <div className="hidden md:block">
             <LeftNav />
           </div>
 
           {/* Center Column (Feed) */}
-          <main className="w-full min-w-0 overflow-x-hidden">
+          <main className="w-full min-w-0">
             <Outlet context={{ onOpenComposer: () => setShowComposerModal(true) }} />
           </main>
 
-          {/* Right Column (260px) */}
-          <div className="hidden lg:block sticky top-14 h-[calc(100vh-56px)] overflow-y-auto p-4 border-l border-[var(--border)]">
+          {/* Right Column (No border divider) */}
+          <div className="hidden lg:block sticky top-14 h-[calc(100vh-56px)] overflow-y-auto pt-2">
             <RightRail />
           </div>
         </div>

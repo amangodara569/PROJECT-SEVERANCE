@@ -74,20 +74,19 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-3xl w-full mx-auto p-4 text-xs space-y-4">
-      {/* Onboarding card at top for new users */}
-      <OnboardingCard joinedCount={floors.length} postCount={posts.length} />
-
-      {/* Tabs (For you, My floors) with New / Top sort at right */}
-      <div className="flex items-center justify-between px-1 border-b border-[var(--border)] pb-2">
+    <div className={`max-w-3xl w-full mx-auto px-4 pb-12 text-xs ${mode === 'outie' ? 'space-y-0' : 'space-y-4'}`}>
+      {/* Static / Sticky Tabs Bar (For you, My floors) with New / Top sort at right */}
+      <div className={`sticky top-14 z-30 bg-[var(--bg)] -mx-4 px-4 pt-3 pb-2.5 flex items-center justify-between transition-colors ${
+        mode === 'outie' ? 'border-b border-[#1E2D28]' : 'border-b border-[var(--border)]'
+      }`}>
         <div className="flex items-center gap-5">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
             className={`pb-1.5 font-medium transition-colors border-b-2 cursor-pointer ${
               activeTab === 'all'
-                ? 'border-[var(--accent)] text-[var(--text)]'
-                : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
+                ? (mode === 'outie' ? 'border-[#E5E5E5] text-[#E5E5E5] font-semibold' : 'border-[var(--accent)] text-[var(--text)]')
+                : (mode === 'outie' ? 'border-transparent text-[#7A8080] hover:text-[#E5E5E5]' : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]')
             }`}
           >
             For you
@@ -97,22 +96,22 @@ export default function Home() {
             onClick={() => setActiveTab('my-floors')}
             className={`pb-1.5 font-medium transition-colors border-b-2 cursor-pointer ${
               activeTab === 'my-floors'
-                ? 'border-[var(--accent)] text-[var(--text)]'
-                : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
+                ? (mode === 'outie' ? 'border-[#E5E5E5] text-[#E5E5E5] font-semibold' : 'border-[var(--accent)] text-[var(--text)]')
+                : (mode === 'outie' ? 'border-transparent text-[#7A8080] hover:text-[#E5E5E5]' : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]')
             }`}
           >
             My floors
           </button>
         </div>
 
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2 text-xs">
           <button
             type="button"
             onClick={() => setSort('new')}
-            className={`cursor-pointer transition-colors px-2 py-0.5 rounded ${
-              sort === 'new'
-                ? 'bg-[var(--surface)] font-semibold text-[var(--text)] border border-[var(--border)]'
-                : 'text-[var(--muted)] hover:text-[var(--text)]'
+            className={`cursor-pointer transition-colors ${
+              mode === 'outie'
+                ? (sort === 'new' ? 'bg-[#1E2D28] text-[#E5E5E5] font-semibold px-3 py-1 rounded' : 'text-[#7A8080] hover:text-[#E5E5E5] px-2 py-1')
+                : (sort === 'new' ? 'bg-[var(--surface)] font-semibold text-[var(--text)] border border-[var(--border)] px-2 py-0.5 rounded' : 'text-[var(--muted)] hover:text-[var(--text)] px-2 py-0.5')
             }`}
           >
             New
@@ -120,16 +119,19 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setSort('top')}
-            className={`cursor-pointer transition-colors px-2 py-0.5 rounded ${
-              sort === 'top'
-                ? 'bg-[var(--surface)] font-semibold text-[var(--text)] border border-[var(--border)]'
-                : 'text-[var(--muted)] hover:text-[var(--text)]'
+            className={`cursor-pointer transition-colors ${
+              mode === 'outie'
+                ? (sort === 'top' ? 'bg-[#1E2D28] text-[#E5E5E5] font-semibold px-3 py-1 rounded' : 'text-[#7A8080] hover:text-[#E5E5E5] px-2 py-1')
+                : (sort === 'top' ? 'bg-[var(--surface)] font-semibold text-[var(--text)] border border-[var(--border)] px-2 py-0.5 rounded' : 'text-[var(--muted)] hover:text-[var(--text)] px-2 py-0.5')
             }`}
           >
             Top
           </button>
         </div>
       </div>
+
+      {/* Onboarding card below static tabs bar for new users */}
+      <OnboardingCard joinedCount={floors.length} postCount={posts.length} />
 
       {/* PostCard cards with universal spacing */}
       {error ? (
@@ -152,7 +154,7 @@ export default function Home() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className={mode === 'outie' ? 'space-y-0' : 'space-y-4'}>
           {posts.map((post) => (
             <PostCard
               key={post._id}

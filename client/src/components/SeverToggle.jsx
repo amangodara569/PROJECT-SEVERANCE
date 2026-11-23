@@ -11,14 +11,14 @@ export default function SeverToggle() {
       aria-checked={isInnie}
       aria-label="Toggle between Outie and Innie mode"
       onClick={toggleMode}
-      className={`group relative inline-flex h-7 w-28 items-center rounded-full p-0.5 transition-colors duration-200 border border-[var(--border)] cursor-pointer select-none ${
-        isInnie ? 'bg-zinc-900 border-zinc-700' : 'bg-[var(--surface)] hover:border-[var(--muted)]'
+      className={`group relative inline-flex h-7 w-28 items-center rounded-full p-0.5 transition-colors duration-200 border cursor-pointer select-none ${
+        isInnie ? 'bg-zinc-900 border-zinc-700' : 'bg-[#141414] border-[#1E2D28]'
       }`}
       title={`Active mode: ${isInnie ? 'Innie (Anonymous)' : 'Outie (Identity)'}. Click to switch.`}
     >
       {/* Sliding thumb pill with active label */}
       <span
-        className={`pointer-events-none absolute top-0.5 bottom-0.5 w-[52px] rounded-full bg-[var(--accent)] text-[var(--accent-fg,#000)] font-semibold text-[10px] uppercase tracking-wider flex items-center justify-center shadow-sm transition-transform duration-200 ease-in-out ${
+        className={`pointer-events-none absolute top-0.5 bottom-0.5 w-[52px] rounded-full bg-[var(--accent)] text-[var(--accent-ink,#091413)] font-bold text-[10px] uppercase tracking-wider flex items-center justify-center shadow-sm transition-transform duration-200 ease-in-out ${
           isInnie ? 'translate-x-[56px]' : 'translate-x-0'
         }`}
       >

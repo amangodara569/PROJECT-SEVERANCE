@@ -59,7 +59,7 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
     >
       <div className="space-y-6">
         {/* Primary Navigation Links */}
-        <nav aria-label="Main" className="space-y-0.5">
+        <nav aria-label="Main" className="space-y-1">
           {primaryNav.map((item) => {
             const Icon = item.icon;
             return (
@@ -67,30 +67,41 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
                 key={item.label}
                 to={item.path}
                 onClick={isMobile ? onCloseMobile : undefined}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 transition-colors rounded-[var(--radius-sm)] ${
+                className={({ isActive }) => {
+                  if (mode === 'outie') {
+                    return `flex items-center gap-3 px-3 py-2 transition-colors rounded-[var(--radius-sm)] ${
+                      isActive
+                        ? 'text-[#E8DF6A] italic font-semibold bg-transparent'
+                        : 'text-[#E5E5E5] hover:text-white bg-transparent'
+                    }`;
+                  }
+                  return `flex items-center gap-3 px-3 py-2 transition-colors rounded-[var(--radius-sm)] ${
                     isActive
                       ? 'bg-[var(--accent-soft)] text-[var(--accent)] font-medium'
                       : 'text-[var(--text)] hover:bg-[var(--hover)]'
-                  }`
-                }
+                  }`;
+                }}
               >
-                <Icon size={16} className="shrink-0" />
-                <span className="truncate">{item.label}</span>
+                {({ isActive }) => (
+                  <>
+                    <Icon size={16} className={`shrink-0 ${mode === 'outie' && isActive ? 'text-[#E8DF6A]' : ''}`} />
+                    <span className="truncate">{item.label}</span>
+                  </>
+                )}
               </NavLink>
             );
           })}
         </nav>
 
         {/* Your Floors */}
-        <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+        <div className={`space-y-2 pt-3 ${mode === 'outie' ? 'border-t border-[#1E2D28]' : 'border-t border-[var(--border)]'}`}>
           <div className="flex items-center justify-between px-3 text-xs text-[var(--muted)]">
-            <span>Your floors</span>
+            <span className="font-semibold">Your floors</span>
             <Link
               to="/floors"
               onClick={isMobile ? onCloseMobile : undefined}
-              title="Create floor"
-              className="hover:text-[var(--text)]"
+              title="Create or join floor"
+              className="hover:text-[var(--text)] text-sm font-bold"
             >
               <Plus size={14} />
             </Link>
@@ -98,9 +109,13 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
 
           <div className="space-y-0.5">
             {joinedFloors.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-[var(--muted)]">
-                No joined floors yet.
-              </div>
+              <Link
+                to="/floors"
+                onClick={isMobile ? onCloseMobile : undefined}
+                className="px-3 py-1.5 text-xs text-[#7A8080] hover:text-[#B0E4CC] transition-colors block font-medium"
+              >
+                + Join/Add
+              </Link>
             ) : (
               joinedFloors.map((f) => (
                 <NavLink
@@ -110,7 +125,7 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3 py-1.5 transition-colors rounded-[var(--radius-sm)] ${
                       isActive
-                        ? 'bg-[var(--accent-soft)] text-[var(--accent)] font-medium'
+                        ? (mode === 'outie' ? 'text-[#E8DF6A] italic font-semibold' : 'bg-[var(--accent-soft)] text-[var(--accent)] font-medium')
                         : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--hover)]'
                     }`
                   }
@@ -124,7 +139,7 @@ export default function LeftNav({ isMobile = false, onCloseMobile = () => {} }) 
         </div>
 
         {/* Informational Footer Links */}
-        <footer className="pt-4 border-t border-[var(--border)] px-3 flex flex-wrap items-center gap-3 text-[11px] text-[var(--muted)]">
+        <footer className={`pt-4 ${mode === 'outie' ? 'border-t border-[#1E2D28]' : 'border-t border-[var(--border)]'} px-3 flex flex-wrap items-center gap-3 text-[11px] text-[var(--muted)]`}>
           <Link
             to="/handbook"
             onClick={isMobile ? onCloseMobile : undefined}
